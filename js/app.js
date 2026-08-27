@@ -14,6 +14,7 @@ async function cargarPestanaScanner() {
     const html = await response.text();
     container.innerHTML = html;
 
+    // Obtener los datos reales de Yahoo Finance
     cargarListaMercadoReal();
   } catch (error) {
     console.error('Error cargando la pestaña:', error);
@@ -21,18 +22,18 @@ async function cargarPestanaScanner() {
   }
 }
 
-// 2. OBTENCIÓN DE DATOS EN TIEMPO REAL CON NÚMERO DE ANALISTAS
+// 2. OBTENCIÓN DE DATOS EN TIEMPO REAL (Yahoo Finance API via Proxy)
 async function cargarListaMercadoReal() {
   const selElement = document.getElementById('sel-screener');
   const tbody = document.getElementById('tbl-activos-body');
   if (!selElement || !tbody) return;
 
-  const tipoScreener = selElement.value;
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
+  const tipoScreener = selElement.value; // day_gainers, day_losers, most_actives
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
-    // Aumentamos count a 50 para traer un catálogo de activos más amplio
-    const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=50`;
+    // API Proxy de Yahoo Finance para evitar bloqueos CORS en navegadores
+    const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=15`;
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
     const res = await fetch(proxyUrl);
@@ -45,7 +46,7 @@ async function cargarListaMercadoReal() {
     tbody.innerHTML = '';
 
     if (quotes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sin datos disponibles</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sin datos disponibles</td></tr>';
       return;
     }
 
@@ -53,8 +54,6 @@ async function cargarListaMercadoReal() {
       const symbol = item.symbol;
       const price = item.regularMarketPrice || 0;
       const change = item.regularMarketChangePercent || 0;
-      // Parámetro de analistas
-      const analysts = item.numberOfAnalystOpinions || item.analystRatingCount || 'N/A';
 
       const tr = document.createElement('tr');
       if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
@@ -66,20 +65,20 @@ async function cargarListaMercadoReal() {
         <td><b>${symbol}</b></td>
         <td>$${price.toFixed(2)}</td>
         <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
-        <td style="text-align:center;">👥 ${analysts}</td>
       `;
 
       tr.onclick = () => seleccionarFilaActivo(item, tr);
       tbody.appendChild(tr);
     });
 
+    // Seleccionar automáticamente el primer activo recibido
     if (quotes.length > 0) {
       seleccionarFilaActivo(quotes[0]);
     }
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
   }
 }
 
@@ -92,8 +91,8 @@ function seleccionarFilaActivo(item, filaTr) {
 
   const price = item.regularMarketPrice || 0;
   const change = item.regularMarketChangePercent || 0;
-  const analysts = item.numberOfAnalystOpinions || item.analystRatingCount || 'N/A';
   
+  // Cálculo de P. Objetivo estimado (+15% por defecto)
   const targetEstimado = price * 1.15;
 
   document.getElementById('mb-ticker').innerText = item.symbol;
@@ -103,11 +102,9 @@ function seleccionarFilaActivo(item, filaTr) {
   mbUpside.innerText = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
   mbUpside.className = `val ${change >= 0 ? 'text-pos' : 'text-neg'}`;
 
-  const mbAnalysts = document.getElementById('mb-analysts');
-  if (mbAnalysts) mbAnalysts.innerText = analysts;
-
   document.getElementById('mb-target').innerText = `$${targetEstimado.toFixed(2)}`;
 
+  // Asignar datos automáticos a la calculadora de riesgo
   document.getElementById('inp-pe').value = price.toFixed(2);
   document.getElementById('inp-sl').value = (price * 0.95).toFixed(2);
   document.getElementById('inp-tp').value = targetEstimado.toFixed(2);
@@ -116,7 +113,7 @@ function seleccionarFilaActivo(item, filaTr) {
   renderGraficoTV(item.symbol, timeframeSeleccionado);
 }
 
-// 4. TRADINGVIEW
+// 4. RENDEREIZAR TRADINGVIEW
 function renderGraficoTV(symbol, interval) {
   const container = document.getElementById('tv_chart_container');
   if (!container) return;
