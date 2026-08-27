@@ -1,5 +1,5 @@
 // Reemplaza con tus claves de Supabase (Paso 1.4)
-const SUPABASE_URL = 'https://TU_PROYECTO.supabase.co';
+const SUPABASE_URL = 'https://Dashboard_Wall.supabase.co';
 const SUPABASE_KEY = 'TU_CLAVE_ANON_PUBLIC';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);

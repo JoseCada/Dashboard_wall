@@ -1,0 +1,36 @@
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+    <!-- Panel Izquierdo: Lista de Mercado -->
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col h-[650px]">
+        <h2 class="text-lg font-semibold mb-3">Explorador de Activos</h2>
+        
+        <!-- Buscador -->
+        <input 
+            type="text" 
+            id="market-search" 
+            placeholder="Buscar ticker (ej: NASDAQ:AAPL, BME:SAN)..." 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm mb-4 focus:outline-none focus:border-emerald-500 text-white"
+        >
+        
+        <!-- Listado de Activos con Scroll -->
+        <div id="market-list" class="space-y-2 overflow-y-auto flex-1 pr-1">
+            <!-- Cargado dinámicamente desde tab1-mercado.js -->
+        </div>
+    </div>
+
+    <!-- Panel Derecho: Gráfico Técnico de TradingView -->
+    <div class="lg:col-span-2 bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col h-[650px]">
+        <div class="flex justify-between items-center mb-3">
+            <div>
+                <span class="text-xs text-slate-400">Activo Seleccionado:</span>
+                <h2 id="tab1-chart-title" class="text-lg font-semibold text-emerald-400">NASDAQ:AAPL</h2>
+            </div>
+            <button id="btn-add-watchlist" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1">
+                <span>+</span>
+                <span>Añadir a Seguimiento</span>
+            </button>
+        </div>
+        
+        <!-- Contenedor del Widget de TradingView -->
+        <div id="tv-chart-tab1" class="w-full flex-1 rounded-lg overflow-hidden border border-slate-700"></div>
+    </div>
+</div>

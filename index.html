@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockDesk Pro - Dashboard de Inversión</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- TradingView Widget Script Global -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body class="h-full flex flex-col font-sans">
+
+    <!-- Navegación Superior -->
+    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">📈</span>
+            <h1 class="text-xl font-bold text-emerald-400">StockDesk Pro</h1>
+        </div>
+        <nav class="flex space-x-2 overflow-x-auto">
+            <button onclick="router.loadTab('tab1-mercado')" id="btn-tab1-mercado" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition">
+                1. Explorador de Mercado
+            </button>
+            <button onclick="router.loadTab('tab2-seguimiento')" id="btn-tab2-seguimiento" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition">
+                2. Lista de Seguimiento
+            </button>
+            <button onclick="router.loadTab('tab3-operaciones')" id="btn-tab3-operaciones" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition">
+                3. Mesa de Operaciones
+            </button>
+            <button onclick="router.loadTab('tab4-cartera')" id="btn-tab4-cartera" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition">
+                4. Cartera & Fiscal (España)
+            </button>
+        </nav>
+    </header>
+
+    <!-- Contenedor Dinámico para las Pestañas -->
+    <main id="app-content" class="flex-1 p-6 overflow-y-auto">
+        <!-- El contenido HTML de la pestaña activa se cargará aquí dinámicamente -->
+    </main>
+
+    <!-- Scripts Base Globales -->
+    <script src="js/db.js"></script>
+    <script src="js/tradingview.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
