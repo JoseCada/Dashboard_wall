@@ -33,7 +33,7 @@ async function cargarListaMercadoReal() {
 
   try {
     // API Proxy de Yahoo Finance para evitar bloqueos CORS en navegadores
-    const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=50`;
+    const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=15`;
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
     const res = await fetch(proxyUrl);
