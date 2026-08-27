@@ -1,36 +1,324 @@
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-    <!-- Panel Izquierdo: Lista de Mercado -->
-    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col h-[650px]">
-        <h2 class="text-lg font-semibold mb-3">Explorador de Activos</h2>
-        
-        <!-- Buscador -->
-        <input 
-            type="text" 
-            id="market-search" 
-            placeholder="Buscar ticker (ej: NASDAQ:AAPL, BME:SAN)..." 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm mb-4 focus:outline-none focus:border-emerald-500 text-white"
-        >
-        
-        <!-- Listado de Activos con Scroll -->
-        <div id="market-list" class="space-y-2 overflow-y-auto flex-1 pr-1">
-            <!-- Cargado dinámicamente desde tab1-mercado.js -->
-        </div>
+<!-- PESTAÑA 1: SCANNER & ANÁLISIS -->
+<div id="tab-scanner" class="tab-content active">
+  <style>
+    .scanner-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .side-panel {
+      background: var(--bg-card, #1e222d);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .filter-group {
+      display: flex;
+      gap: 8px;
+    }
+    .filter-group select {
+      width: 100%;
+      background: #2a2e39;
+      color: #fff;
+      border: 1px solid #363c4e;
+      padding: 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .assets-table-wrapper {
+      overflow-y: auto;
+      max-height: 520px;
+    }
+    .assets-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .assets-table th, .assets-table td {
+      padding: 8px 6px;
+      text-align: left;
+      border-bottom: 1px solid #2a2e39;
+    }
+    .assets-table tr { cursor: pointer; }
+    .assets-table tr:hover, .assets-table tr.selected {
+      background: rgba(41, 98, 255, 0.15);
+    }
+    .pos { color: #089981; }
+    .neg { color: #f23645; }
+
+    /* Chart Column */
+    .chart-panel {
+      background: var(--bg-card, #1e222d);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ticker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #2a2e39;
+      padding: 10px 15px;
+      border-radius: 6px;
+    }
+    .metric-box { display: flex; flex-direction: column; }
+    .metric-box .label { font-size: 11px; color: #787b86; }
+    .metric-box .val { font-size: 14px; font-weight: bold; }
+
+    #tv_chart_container {
+      width: 100%;
+      height: 500px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    /* Inferior: Risk / Management Form */
+    .risk-panel {
+      background: var(--bg-card, #1e222d);
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .risk-panel input, .risk-panel select {
+      background: #2a2e39;
+      color: #fff;
+      border: 1px solid #363c4e;
+      padding: 6px 8px;
+      border-radius: 4px;
+      width: 90px;
+      font-size: 13px;
+    }
+  </style>
+
+  <div class="scanner-layout">
+    <!-- COLUMNA IZQUIERDA: SELECTORES Y LISTA (20%-25%) -->
+    <div class="side-panel">
+      <h4>📋 Scanner</h4>
+      <div class="filter-group">
+        <!-- Selector Ganadores / Perdedores -->
+        <select id="sel-screener" onchange="actualizarListaActivos()">
+          <option value="gainers">🚀 Ganadores</option>
+          <option value="losers">📉 Perdedores</option>
+        </select>
+        <!-- Selector 1D / 1S -->
+        <select id="sel-timeframe-side" onchange="cambiarTimeframe(this.value)">
+          <option value="D">1D</option>
+          <option value="W">1S</option>
+        </select>
+      </div>
+
+      <div class="assets-table-wrapper">
+        <table class="assets-table">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Precio</th>
+              <th>Cambio</th>
+            </tr>
+          </thead>
+          <tbody id="assets-list-body">
+            <!-- Rellenado dinámicamente -->
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- Panel Derecho: Gráfico Técnico de TradingView -->
-    <div class="lg:col-span-2 bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col h-[650px]">
-        <div class="flex justify-between items-center mb-3">
-            <div>
-                <span class="text-xs text-slate-400">Activo Seleccionado:</span>
-                <h2 id="tab1-chart-title" class="text-lg font-semibold text-emerald-400">NASDAQ:AAPL</h2>
-            </div>
-            <button id="btn-add-watchlist" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center space-x-1">
-                <span>+</span>
-                <span>Añadir a Seguimiento</span>
-            </button>
+    <!-- COLUMNA DERECHA: MÉTRICAS Y GRÁFICO TRADINGVIEW (75%-80%) -->
+    <div class="chart-panel">
+      <div class="ticker-header" id="ticker-metrics">
+        <div class="metric-box">
+          <span class="label">ACTIVO</span>
+          <span class="val" id="m-ticker">AAPL</span>
         </div>
-        
-        <!-- Contenedor del Widget de TradingView -->
-        <div id="tv-chart-tab1" class="w-full flex-1 rounded-lg overflow-hidden border border-slate-700"></div>
+        <div class="metric-box">
+          <span class="label">PRECIO</span>
+          <span class="val" id="m-price">$182.50</span>
+        </div>
+        <div class="metric-box">
+          <span class="label">UPSIDE</span>
+          <span class="val pos" id="m-upside">+14.2%</span>
+        </div>
+        <div class="metric-box">
+          <span class="label">P. OBJETIVO</span>
+          <span class="val" id="m-target">$208.00</span>
+        </div>
+        <div class="metric-box">
+          <span class="label">R/R ESTIMADO</span>
+          <span class="val pos" id="m-rr">1:2.4</span>
+        </div>
+      </div>
+
+      <!-- TradingView Widget Container -->
+      <div id="tv_chart_container"></div>
     </div>
+  </div>
+
+  <!-- PANEL INFERIOR: GESTIÓN Y GUARDADO EN FAVORITOS/PORTAFOLIO -->
+  <div class="risk-panel">
+    <label>Tipo:</label>
+    <select id="op-type">
+      <option value="Long">📈 Long</option>
+      <option value="Short">📉 Short</option>
+    </select>
+
+    <label>Entrada:</label>
+    <input type="number" id="inp-entry" step="0.01" value="182.50" oninput="calcularGestionRiesgo()">
+
+    <label>SL 1:</label>
+    <input type="number" id="inp-sl1" step="0.01" value="173.37" oninput="calcularGestionRiesgo()">
+
+    <label>Target:</label>
+    <input type="number" id="inp-target" step="0.01" value="208.00" oninput="calcularGestionRiesgo()">
+
+    <label>R/R:</label>
+    <span id="rr-display" style="font-weight:bold; color:#089981;">1:2.79</span>
+
+    <button onclick="guardarEnPortafolio()" style="background:#2962ff; color:#fff; border:none; padding:8px 14px; border-radius:4px; cursor:pointer; margin-left:auto;">
+      ➕ Añadir a Mi Portafolio
+    </button>
+  </div>
 </div>
+
+<!-- SDK Oficial Widget TradingView -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
+<script>
+  // Datos simulados (los puedes enlazar con tu API o JSON local)
+  const baseDatosActivos = {
+    gainers: [
+      { ticker: "AAPL", name: "Apple Inc.", price: 182.50, change: 2.45, target: 208.00, upside: 14.2 },
+      { ticker: "NVDA", name: "NVIDIA Corp.", price: 780.20, change: 4.12, target: 900.00, upside: 15.35 },
+      { ticker: "MSFT", name: "Microsoft", price: 410.10, change: 1.80, target: 460.00, upside: 12.16 }
+    ],
+    losers: [
+      { ticker: "TSLA", name: "Tesla Inc.", price: 175.20, change: -3.45, target: 210.00, upside: 19.8 },
+      { ticker: "AMD", name: "Advanced Micro Devices", price: 160.40, change: -1.85, target: 190.00, upside: 18.4 }
+    ]
+  };
+
+  let activoActual = "AAPL";
+  let timeframeActual = "D";
+  let tvWidgetInstance = null;
+
+  // 1. Cargar el widget oficial de TradingView
+  function renderTradingViewChart(symbol, interval) {
+    document.getElementById('tv_chart_container').innerHTML = ''; // Limpiar previo
+    tvWidgetInstance = new TradingView.widget({
+      "autosize": true,
+      "symbol": symbol,
+      "interval": interval, // D o W
+      "timezone": "Etc/UTC",
+      "theme": "dark",
+      "style": "1",
+      "locale": "es",
+      "toolbar_bg": "#f1f3f6",
+      "enable_publishing": false,
+      "allow_symbol_change": true,
+      "container_id": "tv_chart_container"
+    });
+  }
+
+  // 2. Renderizar lista según Ganadores / Perdedores
+  function actualizarListaActivos() {
+    const filtro = document.getElementById('sel-screener').value;
+    const tbody = document.getElementById('assets-list-body');
+    const lista = baseDatosActivos[filtro] || [];
+
+    tbody.innerHTML = '';
+    lista.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      if(item.ticker === activoActual) tr.classList.add('selected');
+
+      const classChange = item.change >= 0 ? 'pos' : 'neg';
+      const sign = item.change >= 0 ? '+' : '';
+
+      tr.innerHTML = `
+        <td><b>${item.ticker}</b></td>
+        <td>$${item.price.toFixed(2)}</td>
+        <td class="${classChange}">${sign}${item.change.toFixed(2)}%</td>
+      `;
+
+      tr.onclick = () => seleccionarActivo(item);
+      tbody.appendChild(tr);
+    });
+
+    if(lista.length > 0) seleccionarActivo(lista[0]);
+  }
+
+  // 3. Seleccionar activo e integrar con la vista y el widget TradingView
+  function seleccionarActivo(item) {
+    activoActual = item.ticker;
+    
+    // Actualizar UI de la métrica superior
+    document.getElementById('m-ticker').innerText = item.ticker;
+    document.getElementById('m-price').innerText = `$${item.price.toFixed(2)}`;
+    document.getElementById('m-target').innerText = `$${item.target.toFixed(2)}`;
+    document.getElementById('m-upside').innerText = `+${item.upside}%`;
+
+    // Cargar precio en el cálculo de entrada
+    document.getElementById('inp-entry').value = item.price.toFixed(2);
+    document.getElementById('inp-sl1').value = (item.price * 0.95).toFixed(2);
+    document.getElementById('inp-target').value = item.target.toFixed(2);
+
+    calcularGestionRiesgo();
+
+    // Actualizar gráfico TradingView
+    renderTradingViewChart(item.ticker, timeframeActual);
+  }
+
+  // 4. Cambiar Timeframe (1D vs 1S)
+  function cambiarTimeframe(tf) {
+    timeframeActual = tf;
+    renderTradingViewChart(activoActual, timeframeActual);
+  }
+
+  // 5. Cálculo Dinámico de R/R
+  function calcularGestionRiesgo() {
+    const pe = parseFloat(document.getElementById('inp-entry').value) || 0;
+    const sl = parseFloat(document.getElementById('inp-sl1').value) || 0;
+    const target = parseFloat(document.getElementById('inp-target').value) || 0;
+
+    if (pe > 0 && sl > 0 && target > 0) {
+      const riesgo = Math.abs(pe - sl);
+      const beneficio = Math.abs(target - pe);
+      const rr = (beneficio / riesgo).toFixed(2);
+
+      const rrEl = document.getElementById('rr-display');
+      rrEl.innerText = `1:${rr}`;
+      document.getElementById('m-rr').innerText = `1:${rr}`;
+      rrEl.style.color = rr >= 2 ? '#089981' : '#f23645';
+    }
+  }
+
+  // 6. Guardar la operación manteniendo persistencia en localStorage
+  function guardarEnPortafolio() {
+    const nuevaOperacion = {
+      id: Date.now(),
+      ticker: activoActual,
+      entry: document.getElementById('inp-entry').value,
+      sl: document.getElementById('inp-sl1').value,
+      target: document.getElementById('inp-target').value,
+      type: document.getElementById('op-type').value,
+      date: new Date().toISOString()
+    };
+
+    let portafolio = JSON.parse(localStorage.getItem('mi_portafolio') || '[]');
+    portafolio.push(nuevaOperacion);
+    localStorage.setItem('mi_portafolio', JSON.stringify(portafolio));
+
+    alert(`✅ ${activoActual} guardado en tu portafolio.`);
+  }
+
+  // Inicialización al cargar la página
+  window.addEventListener('DOMContentLoaded', () => {
+    actualizarListaActivos();
+  });
+</script>

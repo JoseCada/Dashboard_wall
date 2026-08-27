@@ -5,6 +5,10 @@ Pass = G@toblanco00_Wall
 
 Githuab
 https://github.com/JoseCada/Dashboard_wall.git
+git add .
+git commit -m "Nueva funcionalidad añadida"
+git push origin main
 
 Url Web
 https://josecada.github.io/Dashboard_wall/
+
