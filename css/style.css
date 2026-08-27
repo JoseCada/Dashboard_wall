@@ -79,12 +79,7 @@ body {
   font-size: 12px;
 }
 
-.table-scroll, 
-#tv_chart_container {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
+
 
 .table-scroll {
   max-height: 480px;
