@@ -22,76 +22,63 @@ async function cargarPestanaScanner() {
   }
 }
 
-// 2. OBTENCIÓN DE DATOS EN TIEMPO REAL CON PROXY DE RESPALDO
+// 2. OBTENCIÓN DE DATOS EN TIEMPO REAL (Yahoo Finance API via Proxy)
 async function cargarListaMercadoReal() {
   const selElement = document.getElementById('sel-screener');
   const tbody = document.getElementById('tbl-activos-body');
-  if (!tbody) return;
+  if (!selElement || !tbody) return;
 
-  const tipoScreener = selElement ? selElement.value : 'day_gainers';
+  const tipoScreener = selElement.value; // day_gainers, day_losers, most_actives
   tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
-  const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=25`;
-  let quotes = [];
-
-  // Intento 1: Proxy Corsproxy.io (Más rápido y directo)
   try {
-    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
-    if (res.ok) {
-      const data = await res.json();
-      quotes = data?.finance?.result[0]?.quotes || [];
+    // API Proxy de Yahoo Finance para evitar bloqueos CORS en navegadores
+    const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=15`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+    const res = await fetch(proxyUrl);
+    const data = await res.json();
+    const parsedData = JSON.parse(data.contents);
+
+    const quotes = parsedData?.finance?.result[0]?.quotes || [];
+    datosActualesMercado = quotes;
+
+    tbody.innerHTML = '';
+
+    if (quotes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sin datos disponibles</td></tr>';
+      return;
     }
-  } catch (e) {
-    console.warn("Proxy 1 falló, intentando Proxy de respaldo...");
-  }
 
-  // Intento 2: Proxy AllOrigins (Respaldo si el primero falla)
-  if (quotes.length === 0) {
-    try {
-      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const parsed = JSON.parse(data.contents);
-        quotes = parsed?.finance?.result[0]?.quotes || [];
-      }
-    } catch (e) {
-      console.error("Error en ambos proxies:", e);
+    quotes.forEach((item, index) => {
+      const symbol = item.symbol;
+      const price = item.regularMarketPrice || 0;
+      const change = item.regularMarketChangePercent || 0;
+
+      const tr = document.createElement('tr');
+      if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
+
+      const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
+      const signo = change >= 0 ? '+' : '';
+
+      tr.innerHTML = `
+        <td><b>${symbol}</b></td>
+        <td>$${price.toFixed(2)}</td>
+        <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
+      `;
+
+      tr.onclick = () => seleccionarFilaActivo(item, tr);
+      tbody.appendChild(tr);
+    });
+
+    // Seleccionar automáticamente el primer activo recibido
+    if (quotes.length > 0) {
+      seleccionarFilaActivo(quotes[0]);
     }
-  }
 
-  tbody.innerHTML = '';
-
-  // Si ambos proxies fallan o no hay datos
-  if (!quotes || quotes.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Error al obtener datos del mercado</td></tr>';
-    return;
-  }
-
-  datosActualesMercado = quotes;
-
-  quotes.forEach((item, index) => {
-    const symbol = item.symbol;
-    const price = item.regularMarketPrice || 0;
-    const change = item.regularMarketChangePercent || 0;
-
-    const tr = document.createElement('tr');
-    if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
-
-    const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
-    const signo = change >= 0 ? '+' : '';
-
-    tr.innerHTML = `
-      <td><b>${symbol}</b></td>
-      <td>$${price.toFixed(2)}</td>
-      <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
-    `;
-
-    tr.onclick = () => seleccionarFilaActivo(item, tr);
-    tbody.appendChild(tr);
-  });
-
-  if (quotes.length > 0) {
-    seleccionarFilaActivo(quotes[0]);
+  } catch (error) {
+    console.error("Error al obtener mercado en tiempo real:", error);
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
   }
 }
 
@@ -105,29 +92,22 @@ function seleccionarFilaActivo(item, filaTr) {
   const price = item.regularMarketPrice || 0;
   const change = item.regularMarketChangePercent || 0;
   
+  // Cálculo de P. Objetivo estimado (+15% por defecto)
   const targetEstimado = price * 1.15;
 
-  const elTicker = document.getElementById('mb-ticker');
-  const elPrecio = document.getElementById('mb-precio');
-  const elTarget = document.getElementById('mb-target');
-  
-  if (elTicker) elTicker.innerText = item.symbol;
-  if (elPrecio) elPrecio.innerText = `$${price.toFixed(2)}`;
-  if (elTarget) elTarget.innerText = `$${targetEstimado.toFixed(2)}`;
+  document.getElementById('mb-ticker').innerText = item.symbol;
+  document.getElementById('mb-precio').innerText = `$${price.toFixed(2)}`;
   
   const mbUpside = document.getElementById('mb-upside');
-  if (mbUpside) {
-    mbUpside.innerText = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-    mbUpside.className = `val ${change >= 0 ? 'text-pos' : 'text-neg'}`;
-  }
+  mbUpside.innerText = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+  mbUpside.className = `val ${change >= 0 ? 'text-pos' : 'text-neg'}`;
 
-  const inpPe = document.getElementById('inp-pe');
-  const inpSl = document.getElementById('inp-sl');
-  const inpTp = document.getElementById('inp-tp');
+  document.getElementById('mb-target').innerText = `$${targetEstimado.toFixed(2)}`;
 
-  if (inpPe) inpPe.value = price.toFixed(2);
-  if (inpSl) inpSl.value = (price * 0.95).toFixed(2);
-  if (inpTp) inpTp.value = targetEstimado.toFixed(2);
+  // Asignar datos automáticos a la calculadora de riesgo
+  document.getElementById('inp-pe').value = price.toFixed(2);
+  document.getElementById('inp-sl').value = (price * 0.95).toFixed(2);
+  document.getElementById('inp-tp').value = targetEstimado.toFixed(2);
 
   recalcularRisk();
   renderGraficoTV(item.symbol, timeframeSeleccionado);
