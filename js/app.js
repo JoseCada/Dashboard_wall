@@ -26,72 +26,62 @@ async function cargarPestanaScanner() {
 async function cargarListaMercadoReal() {
   const selElement = document.getElementById('sel-screener');
   const tbody = document.getElementById('tbl-activos-body');
-  if (!tbody) return;
+  if (!selElement || !tbody) return;
 
-  const tipoScreener = selElement ? selElement.value : 'day_gainers';
+  const tipoScreener = selElement.value; // day_gainers, day_losers, most_actives
   tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
-  const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=25`;
-  let quotes = [];
-
-  // Intento 1: Proxy Corsproxy (Generalmente no es bloqueado por Yahoo)
   try {
-    const res1 = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
-    if (res1.ok) {
-      const data = await res1.json();
-      quotes = data?.finance?.result[0]?.quotes || [];
+    //https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=day_gainers&count=50
+    //https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=day_losers&count=50
+    //https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=most_actives&count=50
+    // API Proxy de Yahoo Finance para evitar bloqueos CORS en navegadores
+    const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=15`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+    const res = await fetch(proxyUrl);
+    const data = await res.json();
+    const parsedData = JSON.parse(data.contents);
+
+    const quotes = parsedData?.finance?.result[0]?.quotes || [];
+    datosActualesMercado = quotes;
+
+    tbody.innerHTML = '';
+
+    if (quotes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sin datos disponibles</td></tr>';
+      return;
     }
-  } catch (e) {
-    console.warn("Corsproxy falló, intentando proxy alternativo...");
-  }
 
-  // Intento 2: Proxy AllOrigins (Si el primero falla)
-  if (!quotes || quotes.length === 0) {
-    try {
-      const res2 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
-      if (res2.ok) {
-        const data = await res2.json();
-        const parsed = JSON.parse(data.contents);
-        quotes = parsed?.finance?.result[0]?.quotes || [];
-      }
-    } catch (e) {
-      console.warn("AllOrigins también falló.");
+    quotes.forEach((item, index) => {
+      const symbol = item.symbol;
+      const price = item.regularMarketPrice || 0;
+      const change = item.regularMarketChangePercent || 0;
+
+      const tr = document.createElement('tr');
+      if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
+
+      const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
+      const signo = change >= 0 ? '+' : '';
+
+      tr.innerHTML = `
+        <td><b>${symbol}</b></td>
+        <td>$${price.toFixed(2)}</td>
+        <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
+      `;
+
+      tr.onclick = () => seleccionarFilaActivo(item, tr);
+      tbody.appendChild(tr);
+    });
+
+    // Seleccionar automáticamente el primer activo recibido
+    if (quotes.length > 0) {
+      seleccionarFilaActivo(quotes[0]);
     }
-  }
 
-  tbody.innerHTML = '';
-
-  // Si no se pudieron obtener datos por ningún medio
-  if (!quotes || quotes.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Yahoo bloqueó la solicitud del proxy para esta categoría</td></tr>';
-    return;
-  }
-
-  datosActualesMercado = quotes;
-
-  quotes.forEach((item, index) => {
-    const symbol = item.symbol;
-    const price = item.regularMarketPrice || 0;
-    const change = item.regularMarketChangePercent || 0;
-
-    const tr = document.createElement('tr');
-    if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
-
-    const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
-    const signo = change >= 0 ? '+' : '';
-
-    tr.innerHTML = `
-      <td><b>${symbol}</b></td>
-      <td>$${price.toFixed(2)}</td>
-      <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
-    `;
-
-    tr.onclick = () => seleccionarFilaActivo(item, tr);
-    tbody.appendChild(tr);
-  });
-
-  if (quotes.length > 0) {
-    seleccionarFilaActivo(quotes[0]);
+  } catch (error) {
+    console.error("Error al obtener mercado en tiempo real:", error);
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
   }
 }
 
