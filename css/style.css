@@ -8,53 +8,48 @@
   --neg-red: #f23645;
 }
 
-body {
+/* 1. Ajuste global del cuerpo para evitar barras de desplazamiento externas */
+html, body {
   margin: 0;
   padding: 0;
+  height: 100vh;
+  overflow: hidden;
   background-color: var(--bg-dark);
   color: var(--text-color);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
-/* TABS */
+/* 2. Header de pestañas */
 .tabs-header {
   display: flex;
   background-color: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
   padding: 0 15px;
-}
-.tab-btn {
-  background: none;
-  border: none;
-  color: #787b86;
-  padding: 14px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-.tab-btn:hover { color: #fff; }
-.tab-btn.active {
-  color: var(--accent-blue);
-  border-bottom-color: var(--accent-blue);
+  height: 45px;
+  box-sizing: border-box;
 }
 
+/* 3. Contenedor de las pestañas (calcula el alto dinámicamente) */
 .tab-content {
   display: none;
-  padding: 15px;
+  height: calc(100vh - 45px);
+  box-sizing: border-box;
 }
 .tab-content.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
-/* LAYOUT SCANNER */
+/* 4. Layout principal: El scanner ocupa todo el espacio vertical disponible */
 .scanner-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 15px;
-  margin-bottom: 15px;
+  grid-template-columns: 320px 1fr;
+  gap: 12px;
+  padding: 12px;
+  flex: 1; /* Absorbe todo el espacio restante antes de la barra inferior */
+  min-height: 0; /* Permite que el contenido interno haga scroll sin empujar la pantalla */
 }
+
 .side-card, .chart-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -63,90 +58,43 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0; /* Previene desbordamiento en flex child */
 }
 
-.selectors-row {
-  display: flex;
-  gap: 8px;
-}
-.selectors-row select {
-  flex: 1;
-  background: #2a2e39;
-  color: #fff;
-  border: 1px solid #363c4e;
-  padding: 6px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
+/* Tabla con scroll vertical automático según el alto disponible */
 .table-scroll {
-  max-height: 480px;
+  flex: 1;
   overflow-y: auto;
 }
-.mini-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.mini-table th, .mini-table td {
-  padding: 8px 6px;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
-}
-.mini-table tr { cursor: pointer; }
-.mini-table tr:hover, .mini-table tr.active-row {
-  background: rgba(41, 98, 255, 0.18);
-}
-.text-pos { color: var(--pos-green); font-weight: bold; }
-.text-neg { color: var(--neg-red); font-weight: bold; }
 
-/* BARRA DE MÉTRICAS Y GRÁFICO */
-.metrics-bar {
-  display: flex;
-  justify-content: space-between;
-  background: #2a2e39;
-  padding: 8px 15px;
-  border-radius: 6px;
-}
-.m-item { display: flex; flex-direction: column; }
-.m-item .lbl { font-size: 10px; color: #787b86; }
-.m-item .val { font-size: 13px; font-weight: bold; color: #fff; }
-
+/* El widget de TradingView se estira para llenar toda la tarjeta derecha */
 #tv_chart_container {
   width: 100%;
-  height: 480px;
+  flex: 1;
   border-radius: 4px;
   overflow: hidden;
   background: var(--bg-dark);
 }
 
-/* BARRA DE RIESGO */
+/* 5. Barra de riesgo fija en la parte inferior */
 .risk-bar {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px;
+  border-top: 1px solid var(--border-color);
+  padding: 10px 20px;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 15px;
   align-items: center;
   font-size: 13px;
+  height: 55px;
+  box-sizing: border-box;
 }
+
 .risk-bar input, .risk-bar select {
   background: #2a2e39;
   color: #fff;
   border: 1px solid #363c4e;
   padding: 6px;
   border-radius: 4px;
-  width: 85px;
+  width: 90px;
 }
-.btn-primary {
-  background: var(--accent-blue);
-  color: #fff;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-}
-.btn-primary:hover { opacity: 0.9; }

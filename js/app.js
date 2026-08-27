@@ -124,7 +124,7 @@ function renderGraficoTV(symbol, interval) {
 
   if (typeof TradingView !== 'undefined') {
     new TradingView.widget({
-      "autosize": true,
+      "autosize": true, // Importante para ajustarse al 100% del alto/ancho del contenedor
       "symbol": symbol,
       "interval": interval,
       "timezone": "Etc/UTC",
