@@ -6,7 +6,7 @@
   <title>Dashboard Wall</title>
   
   <!-- CSS Principal -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/style.css">
   
   <!-- SDK Oficial de TradingView -->
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -19,17 +19,13 @@
     <button class="tab-btn" onclick="cambiarPestana('tab-portafolio', this)">💼 Mi Portafolio</button>
   </nav>
 
-  <!-- PESTAÑA 1: SCANNER (Se carga dinámicamente desde tabs/tabs1_scanner.html) -->
-  <div id="tab-scanner" class="tab-content active">
-    <!-- El HTML se inyectará aquí con app.js -->
-  </div>
+  <!-- PESTAÑA 1: SCANNER (Cargado dinámicamente) -->
+  <div id="tab-scanner" class="tab-content active"></div>
 
-  <!-- PESTAÑA 2: PORTAFOLIO Y FAVORITOS -->
-  <div id="tab-portafolio" class="tab-content">
-    <!-- Se inyecta desde app.js -->
-  </div>
+  <!-- PESTAÑA 2: PORTAFOLIO -->
+  <div id="tab-portafolio" class="tab-content"></div>
 
   <!-- Lógica Principal JS -->
-  <script src="app.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

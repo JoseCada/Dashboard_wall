@@ -1,11 +1,16 @@
 <div class="scanner-layout">
-  <!-- Columna Izquierda: Tabla Lateral / Scanner -->
+  <!-- Columna Izquierda: Scanner Real -->
   <div class="side-card">
-    <h4 style="margin:0; color:#fff;">📋 Scanner</h4>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h4 style="margin:0; color:#fff;">📋 Scanner Real</h4>
+      <button onclick="cargarListaMercadoReal()" style="background:none; border:none; color:#787b86; cursor:pointer;" title="Recargar mercado">🔄</button>
+    </div>
+
     <div class="selectors-row">
-      <select id="sel-screener" onchange="cargarListaMercado()">
-        <option value="gainers">🚀 Ganadores</option>
-        <option value="losers">📉 Perdedores</option>
+      <select id="sel-screener" onchange="cargarListaMercadoReal()">
+        <option value="day_gainers">🚀 Top Ganadores</option>
+        <option value="day_losers">📉 Top Perdedores</option>
+        <option value="most_actives">🔥 Más Activos</option>
       </select>
       <select id="sel-tf-side" onchange="cambiarTimeframe(this.value)">
         <option value="D">1D</option>
@@ -23,7 +28,7 @@
           </tr>
         </thead>
         <tbody id="tbl-activos-body">
-          <!-- Se puebla desde app.js -->
+          <tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando datos en vivo...</td></tr>
         </tbody>
       </table>
     </div>
@@ -32,11 +37,11 @@
   <!-- Columna Derecha: Métricas y TradingView -->
   <div class="chart-card">
     <div class="metrics-bar">
-      <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="mb-ticker">NVDA</span></div>
-      <div class="m-item"><span class="lbl">PRECIO</span><span class="val" id="mb-precio">$130.00</span></div>
-      <div class="m-item"><span class="lbl">UPSIDE</span><span class="val text-pos" id="mb-upside">+18.5%</span></div>
-      <div class="m-item"><span class="lbl">P. OBJETIVO</span><span class="val" id="mb-target">$154.00</span></div>
-      <div class="m-item"><span class="lbl">R/R ESTIMADO</span><span class="val text-pos" id="mb-rr">1:2.4</span></div>
+      <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="mb-ticker">---</span></div>
+      <div class="m-item"><span class="lbl">PRECIO REAL</span><span class="val" id="mb-precio">$0.00</span></div>
+      <div class="m-item"><span class="lbl">CAMBIO DIA</span><span class="val" id="mb-upside">0.00%</span></div>
+      <div class="m-item"><span class="lbl">P. OBJETIVO (+15%)</span><span class="val" id="mb-target">$0.00</span></div>
+      <div class="m-item"><span class="lbl">R/R ESTIMADO</span><span class="val text-pos" id="mb-rr">1:2.0</span></div>
     </div>
 
     <div id="tv_chart_container"></div>
