@@ -6,7 +6,7 @@
   <title>Dashboard Wall</title>
   
   <!-- CSS Principal -->
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="styles.css">
   
   <!-- SDK Oficial de TradingView -->
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -19,87 +19,17 @@
     <button class="tab-btn" onclick="cambiarPestana('tab-portafolio', this)">💼 Mi Portafolio</button>
   </nav>
 
-  <!-- PESTAÑA 1: SCANNER Y GRÁFICO -->
+  <!-- PESTAÑA 1: SCANNER (Se carga dinámicamente desde tabs/tabs1_scanner.html) -->
   <div id="tab-scanner" class="tab-content active">
-    
-    <div class="scanner-layout">
-      <!-- Columna Izquierda: Tabla Lateral / Scanner -->
-      <div class="side-card">
-        <h4 style="margin:0; color:#fff;">📋 Scanner</h4>
-        <div class="selectors-row">
-          <select id="sel-screener" onchange="cargarListaMercado()">
-            <option value="gainers">🚀 Ganadores</option>
-            <option value="losers">📉 Perdedores</option>
-          </select>
-          <select id="sel-tf-side" onchange="cambiarTimeframe(this.value)">
-            <option value="D">1D</option>
-            <option value="W">1S</option>
-          </select>
-        </div>
-
-        <div class="table-scroll">
-          <table class="mini-table">
-            <thead>
-              <tr>
-                <th>Ticker</th>
-                <th>Precio</th>
-                <th>Cambio</th>
-              </tr>
-            </thead>
-            <tbody id="tbl-activos-body">
-              <!-- Se puebla desde app.js -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Columna Derecha: Métricas y TradingView -->
-      <div class="chart-card">
-        <div class="metrics-bar">
-          <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="mb-ticker">NVDA</span></div>
-          <div class="m-item"><span class="lbl">PRECIO</span><span class="val" id="mb-precio">$130.00</span></div>
-          <div class="m-item"><span class="lbl">UPSIDE</span><span class="val text-pos" id="mb-upside">+18.5%</span></div>
-          <div class="m-item"><span class="lbl">P. OBJETIVO</span><span class="val" id="mb-target">$154.00</span></div>
-          <div class="m-item"><span class="lbl">R/R ESTIMADO</span><span class="val text-pos" id="mb-rr">1:2.4</span></div>
-        </div>
-
-        <div id="tv_chart_container"></div>
-      </div>
-    </div>
-
-    <!-- Panel Inferior: Gestión de Riesgo / Entrada -->
-    <div class="risk-bar">
-      <label>Tipo:</label>
-      <select id="op-tipo">
-        <option value="Long">📈 Long</option>
-        <option value="Short">📉 Short</option>
-      </select>
-      
-      <label>Entrada:</label>
-      <input type="number" id="inp-pe" step="0.01" oninput="recalcularRisk()">
-
-      <label>Stop Loss:</label>
-      <input type="number" id="inp-sl" step="0.01" oninput="recalcularRisk()">
-
-      <label>Take Profit:</label>
-      <input type="number" id="inp-tp" step="0.01" oninput="recalcularRisk()">
-
-      <label>Ratio R/R:</label>
-      <span id="txt-rr" style="font-weight:bold; color:var(--pos-green);">1:2.00</span>
-
-      <button class="btn-primary" onclick="guardarEnPortafolio()" style="margin-left:auto;">
-        ➕ Guardar en Portafolio
-      </button>
-    </div>
-
+    <!-- El HTML se inyectará aquí con app.js -->
   </div>
 
   <!-- PESTAÑA 2: PORTAFOLIO Y FAVORITOS -->
   <div id="tab-portafolio" class="tab-content">
-    <!-- Se actualiza dinámicamente desde app.js -->
+    <!-- Se inyecta desde app.js -->
   </div>
 
   <!-- Lógica Principal JS -->
-  <script src="js/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

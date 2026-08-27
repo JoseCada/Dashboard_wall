@@ -1,319 +1,69 @@
-<!-- PESTAÑA 1: SCANNER & ANÁLISIS -->
-<div id="tab-scanner" class="tab-content active" style="padding: 15px;">
-  
-  <style>
-    .scanner-container {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-    .side-card {
-      background: #1e222d;
-      border: 1px solid #2a2e39;
-      border-radius: 8px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .selectors-row {
-      display: flex;
-      gap: 8px;
-    }
-    .selectors-row select {
-      flex: 1;
-      background: #2a2e39;
-      color: #d1d4dc;
-      border: 1px solid #363c4e;
-      padding: 6px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-    .table-scroll {
-      max-height: 480px;
-      overflow-y: auto;
-    }
-    .mini-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      color: #d1d4dc;
-    }
-    .mini-table th, .mini-table td {
-      padding: 6px 4px;
-      text-align: left;
-      border-bottom: 1px solid #2a2e39;
-    }
-    .mini-table tr { cursor: pointer; }
-    .mini-table tr:hover, .mini-table tr.active-row {
-      background: rgba(41, 98, 255, 0.2);
-    }
-    .text-pos { color: #089981; font-weight: bold; }
-    .text-neg { color: #f23645; font-weight: bold; }
-
-    /* Zona del Gráfico */
-    .chart-card {
-      background: #1e222d;
-      border: 1px solid #2a2e39;
-      border-radius: 8px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .metrics-bar {
-      display: flex;
-      justify-content: space-between;
-      background: #2a2e39;
-      padding: 8px 15px;
-      border-radius: 6px;
-    }
-    .m-item { display: flex; flex-direction: column; }
-    .m-item .lbl { font-size: 10px; color: #787b86; }
-    .m-item .val { font-size: 13px; font-weight: bold; color: #fff; }
-
-    #tv_chart_container {
-      width: 100%;
-      height: 480px;
-      border-radius: 4px;
-      overflow: hidden;
-      background: #131722;
-    }
-
-    /* Formulario Inferior */
-    .risk-bar {
-      background: #1e222d;
-      border: 1px solid #2a2e39;
-      border-radius: 8px;
-      padding: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      color: #d1d4dc;
-      font-size: 13px;
-    }
-    .risk-bar input, .risk-bar select {
-      background: #2a2e39;
-      color: #fff;
-      border: 1px solid #363c4e;
-      padding: 5px;
-      border-radius: 4px;
-      width: 85px;
-    }
-  </style>
-
-  <!-- 1. BLOQUE PRINCIPAL (20% | 80%) -->
-  <div class="scanner-container">
-    
-    <!-- COLUMNA IZQUIERDA -->
-    <div class="side-card">
-      <h4 style="margin:0; color:#fff;">📋 Scanner</h4>
-      <div class="selectors-row">
-        <select id="sel-screener" onchange="cargarListaMercado()">
-          <option value="gainers">🚀 Ganadores</option>
-          <option value="losers">📉 Perdedores</option>
-        </select>
-        <select id="sel-tf-side" onchange="cambiarTimeframe(this.value)">
-          <option value="D">1D</option>
-          <option value="W">1S</option>
-        </select>
-      </div>
-
-      <div class="table-scroll">
-        <table class="mini-table">
-          <thead>
-            <tr>
-              <th>Ticker</th>
-              <th>Precio</th>
-              <th>Cambio</th>
-            </tr>
-          </thead>
-          <tbody id="tbl-activos-body">
-            <!-- Rellenado con JS -->
-          </tbody>
-        </table>
-      </div>
+<div class="scanner-layout">
+  <!-- Columna Izquierda: Tabla Lateral / Scanner -->
+  <div class="side-card">
+    <h4 style="margin:0; color:#fff;">📋 Scanner</h4>
+    <div class="selectors-row">
+      <select id="sel-screener" onchange="cargarListaMercado()">
+        <option value="gainers">🚀 Ganadores</option>
+        <option value="losers">📉 Perdedores</option>
+      </select>
+      <select id="sel-tf-side" onchange="cambiarTimeframe(this.value)">
+        <option value="D">1D</option>
+        <option value="W">1S</option>
+      </select>
     </div>
 
-    <!-- COLUMNA DERECHA: GRÁFICO & MÉTRICAS -->
-    <div class="chart-card">
-      <div class="metrics-bar">
-        <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="mb-ticker">NVDA</span></div>
-        <div class="m-item"><span class="lbl">PRECIO</span><span class="val" id="mb-precio">$130.00</span></div>
-        <div class="m-item"><span class="lbl">UPSIDE</span><span class="val text-pos" id="mb-upside">+18.5%</span></div>
-        <div class="m-item"><span class="lbl">P. OBJETIVO</span><span class="val" id="mb-target">$154.00</span></div>
-        <div class="m-item"><span class="lbl">R/R ESTIMADO</span><span class="val text-pos" id="mb-rr">1:2.4</span></div>
-      </div>
+    <div class="table-scroll">
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Precio</th>
+            <th>Cambio</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-activos-body">
+          <!-- Se puebla desde app.js -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      <!-- Contenedor del Gráfico TradingView -->
-      <div id="tv_chart_container"></div>
+  <!-- Columna Derecha: Métricas y TradingView -->
+  <div class="chart-card">
+    <div class="metrics-bar">
+      <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="mb-ticker">NVDA</span></div>
+      <div class="m-item"><span class="lbl">PRECIO</span><span class="val" id="mb-precio">$130.00</span></div>
+      <div class="m-item"><span class="lbl">UPSIDE</span><span class="val text-pos" id="mb-upside">+18.5%</span></div>
+      <div class="m-item"><span class="lbl">P. OBJETIVO</span><span class="val" id="mb-target">$154.00</span></div>
+      <div class="m-item"><span class="lbl">R/R ESTIMADO</span><span class="val text-pos" id="mb-rr">1:2.4</span></div>
     </div>
 
+    <div id="tv_chart_container"></div>
   </div>
-
-  <!-- 2. PANEL INFERIOR DE GESTIÓN -->
-  <div class="risk-bar">
-    <label>Tipo:</label>
-    <select id="op-tipo"><option value="Long">📈 Long</option><option value="Short">📉 Short</option></select>
-    
-    <label>Entrada:</label>
-    <input type="number" id="inp-pe" step="0.01" oninput="recalcularRisk()">
-
-    <label>SL 1:</label>
-    <input type="number" id="inp-sl" step="0.01" oninput="recalcularRisk()">
-
-    <label>Objetivo:</label>
-    <input type="number" id="inp-tp" step="0.01" oninput="recalcularRisk()">
-
-    <label>Ratio R/R:</label>
-    <span id="txt-rr" style="font-weight:bold; color:#089981;">1:2.00</span>
-
-    <button onclick="agregarAPortafolio()" style="margin-left:auto; background:#2962ff; color:#fff; border:none; padding:7px 14px; border-radius:4px; cursor:pointer;">
-      ➕ Guardar en Portafolio
-    </button>
-  </div>
-
 </div>
 
-<!-- SDK de TradingView (Imprescindible para renderizar el gráfico) -->
-<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<!-- Panel Inferior: Gestión de Riesgo / Entrada -->
+<div class="risk-bar">
+  <label>Tipo:</label>
+  <select id="op-tipo">
+    <option value="Long">📈 Long</option>
+    <option value="Short">📉 Short</option>
+  </select>
+  
+  <label>Entrada:</label>
+  <input type="number" id="inp-pe" step="0.01" oninput="recalcularRisk()">
 
-<script>
-  // Datos locales de respaldo en caso de que la llamada a la API falle por CORS
-  const mockData = {
-    gainers: [
-      { ticker: "NVDA", price: 130.00, change: 4.25, target: 154.00, upside: 18.5 },
-      { ticker: "AAPL", price: 224.50, change: 1.80, target: 250.00, upside: 11.35 },
-      { ticker: "MSFT", price: 448.00, change: 2.10, target: 500.00, upside: 11.60 },
-      { ticker: "AMZN", price: 186.30, change: 3.15, target: 220.00, upside: 18.08 }
-    ],
-    losers: [
-      { ticker: "TSLA", price: 210.20, change: -3.40, target: 240.00, upside: 14.17 },
-      { ticker: "INTC", price: 20.50, change: -2.15, target: 25.00, upside: 21.95 },
-      { ticker: "NKE", price: 82.10, change: -1.90, target: 95.00, upside: 15.71 }
-    ]
-  };
+  <label>Stop Loss:</label>
+  <input type="number" id="inp-sl" step="0.01" oninput="recalcularRisk()">
 
-  let activoSeleccionado = "NVDA";
-  let timeframeSeleccionado = "D";
+  <label>Take Profit:</label>
+  <input type="number" id="inp-tp" step="0.01" oninput="recalcularRisk()">
 
-  // Inicializar o renderizar gráfico TradingView
-  function renderGraficoTV(symbol, interval) {
-    const container = document.getElementById('tv_chart_container');
-    if(!container) return;
-    container.innerHTML = ''; // Limpiar previo
+  <label>Ratio R/R:</label>
+  <span id="txt-rr" style="font-weight:bold; color:var(--pos-green);">1:2.00</span>
 
-    if(typeof TradingView !== 'undefined') {
-      new TradingView.widget({
-        "autosize": true,
-        "symbol": symbol,
-        "interval": interval,
-        "timezone": "Etc/UTC",
-        "theme": "dark",
-        "style": "1",
-        "locale": "es",
-        "toolbar_bg": "#f1f3f6",
-        "enable_publishing": false,
-        "allow_symbol_change": true,
-        "container_id": "tv_chart_container"
-      });
-    } else {
-      container.innerHTML = "<p style='color:white; padding:20px;'>Cargando librería de TradingView...</p>";
-    }
-  }
-
-  // Cargar tabla lateral según Ganadores/Perdedores
-  function cargarListaMercado() {
-    const filtro = document.getElementById('sel-screener').value;
-    const tbody = document.getElementById('tbl-activos-body');
-    const lista = mockData[filtro] || [];
-
-    tbody.innerHTML = '';
-    lista.forEach((item) => {
-      const tr = document.createElement('tr');
-      if (item.ticker === activoSeleccionado) tr.classList.add('active-row');
-
-      const colorClase = item.change >= 0 ? 'text-pos' : 'text-neg';
-      const signo = item.change >= 0 ? '+' : '';
-
-      tr.innerHTML = `
-        <td><b>${item.ticker}</b></td>
-        <td>$${item.price.toFixed(2)}</td>
-        <td class="${colorClase}">${signo}${item.change.toFixed(2)}%</td>
-      `;
-
-      tr.onclick = () => seleccionarFilaActivo(item, tr);
-      tbody.appendChild(tr);
-    });
-
-    if (lista.length > 0) seleccionarFilaActivo(lista[0]);
-  }
-
-  function seleccionarFilaActivo(item, filaTr) {
-    activoSeleccionado = item.ticker;
-
-    // Resaltar fila seleccionada
-    document.querySelectorAll('#tbl-activos-body tr').forEach(r => r.classList.remove('active-row'));
-    if(filaTr) filaTr.classList.add('active-row');
-
-    // Actualizar métricas
-    document.getElementById('mb-ticker').innerText = item.ticker;
-    document.getElementById('mb-precio').innerText = `$${item.price.toFixed(2)}`;
-    document.getElementById('mb-target').innerText = `$${item.target.toFixed(2)}`;
-    document.getElementById('mb-upside').innerText = `+${item.upside}%`;
-
-    // Cargar inputs del panel de riesgo
-    document.getElementById('inp-pe').value = item.price.toFixed(2);
-    document.getElementById('inp-sl').value = (item.price * 0.95).toFixed(2);
-    document.getElementById('inp-tp').value = item.target.toFixed(2);
-
-    recalcularRisk();
-    renderGraficoTV(item.ticker, timeframeSeleccionado);
-  }
-
-  function cambiarTimeframe(tf) {
-    timeframeSeleccionado = tf;
-    renderGraficoTV(activoSeleccionado, timeframeSeleccionado);
-  }
-
-  function recalcularRisk() {
-    const pe = parseFloat(document.getElementById('inp-pe').value) || 0;
-    const sl = parseFloat(document.getElementById('inp-sl').value) || 0;
-    const tp = parseFloat(document.getElementById('inp-tp').value) || 0;
-
-    if (pe > 0 && sl > 0 && tp > 0) {
-      const riesgo = Math.abs(pe - sl);
-      const beneficio = Math.abs(tp - pe);
-      const rr = (beneficio / riesgo).toFixed(2);
-
-      const el = document.getElementById('txt-rr');
-      el.innerText = `1:${rr}`;
-      document.getElementById('mb-rr').innerText = `1:${rr}`;
-      el.style.color = rr >= 2 ? '#089981' : '#f23645';
-    }
-  }
-
-  function agregarAPortafolio() {
-    const operacion = {
-      id: Date.now(),
-      ticker: activoSeleccionado,
-      entry: document.getElementById('inp-pe').value,
-      sl: document.getElementById('inp-sl').value,
-      tp: document.getElementById('inp-tp').value,
-      tipo: document.getElementById('op-tipo').value,
-      fecha: new Date().toLocaleDateString()
-    };
-
-    let portafolio = JSON.parse(localStorage.getItem('mi_portafolio') || '[]');
-    portafolio.push(operacion);
-    localStorage.setItem('mi_portafolio', JSON.stringify(portafolio));
-    alert(`✅ ${activoSeleccionado} guardado con éxito en tu portafolio.`);
-  }
-
-  // Carga inicial al cargar el DOM
-  window.addEventListener('DOMContentLoaded', () => {
-    cargarListaMercado();
-  });
-</script>
+  <button class="btn-primary" onclick="guardarEnPortafolio()" style="margin-left:auto;">
+    ➕ Guardar en Portafolio
+  </button>
+</div>
