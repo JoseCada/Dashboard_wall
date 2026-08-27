@@ -1,48 +1,105 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-slate-900 text-slate-100">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StockDesk Pro - Dashboard de Inversión</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- TradingView Widget Script Global -->
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Wall</title>
+  
+  <!-- CSS Principal -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- SDK Oficial de TradingView -->
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
-<body class="h-full flex flex-col font-sans">
+<body>
 
-    <!-- Navegación Superior -->
-    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
-        <div class="flex items-center space-x-3">
-            <span class="text-2xl">📈</span>
-            <h1 class="text-xl font-bold text-emerald-400">StockDesk Pro</h1>
+  <!-- BARRA DE NAVEGACIÓN DE PESTAÑAS -->
+  <nav class="tabs-header">
+    <button class="tab-btn active" onclick="cambiarPestana('tab-scanner', this)">📋 Scanner & Análisis</button>
+    <button class="tab-btn" onclick="cambiarPestana('tab-portafolio', this)">💼 Mi Portafolio</button>
+  </nav>
+
+  <!-- PESTAÑA 1: SCANNER Y GRÁFICO -->
+  <div id="tab-scanner" class="tab-content active">
+    
+    <div class="scanner-layout">
+      <!-- Columna Izquierda: Tabla Lateral / Scanner -->
+      <div class="side-card">
+        <h4 style="margin:0; color:#fff;">📋 Scanner</h4>
+        <div class="selectors-row">
+          <select id="sel-screener" onchange="cargarListaMercado()">
+            <option value="gainers">🚀 Ganadores</option>
+            <option value="losers">📉 Perdedores</option>
+          </select>
+          <select id="sel-tf-side" onchange="cambiarTimeframe(this.value)">
+            <option value="D">1D</option>
+            <option value="W">1S</option>
+          </select>
         </div>
-        <nav class="flex space-x-2 overflow-x-auto">
-            <button onclick="router.loadTab('tab1-mercado')" id="btn-tab1-mercado" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition">
-                1. Explorador de Mercado
-            </button>
-            <button onclick="router.loadTab('tab2-seguimiento')" id="btn-tab2-seguimiento" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition">
-                2. Lista de Seguimiento
-            </button>
-            <button onclick="router.loadTab('tab3-operaciones')" id="btn-tab3-operaciones" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition">
-                3. Mesa de Operaciones
-            </button>
-            <button onclick="router.loadTab('tab4-cartera')" id="btn-tab4-cartera" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition">
-                4. Cartera & Fiscal (España)
-            </button>
-        </nav>
-    </header>
 
-    <!-- Contenedor Dinámico para las Pestañas -->
-    <main id="app-content" class="flex-1 p-6 overflow-y-auto">
-        <!-- El contenido HTML de la pestaña activa se cargará aquí dinámicamente -->
-    </main>
+        <div class="table-scroll">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Precio</th>
+                <th>Cambio</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-activos-body">
+              <!-- Se puebla desde app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-    <!-- Scripts Base Globales -->
-    <script src="js/db.js"></script>
-    <script src="js/tradingview.js"></script>
-    <script src="js/app.js"></script>
+      <!-- Columna Derecha: Métricas y TradingView -->
+      <div class="chart-card">
+        <div class="metrics-bar">
+          <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="mb-ticker">NVDA</span></div>
+          <div class="m-item"><span class="lbl">PRECIO</span><span class="val" id="mb-precio">$130.00</span></div>
+          <div class="m-item"><span class="lbl">UPSIDE</span><span class="val text-pos" id="mb-upside">+18.5%</span></div>
+          <div class="m-item"><span class="lbl">P. OBJETIVO</span><span class="val" id="mb-target">$154.00</span></div>
+          <div class="m-item"><span class="lbl">R/R ESTIMADO</span><span class="val text-pos" id="mb-rr">1:2.4</span></div>
+        </div>
+
+        <div id="tv_chart_container"></div>
+      </div>
+    </div>
+
+    <!-- Panel Inferior: Gestión de Riesgo / Entrada -->
+    <div class="risk-bar">
+      <label>Tipo:</label>
+      <select id="op-tipo">
+        <option value="Long">📈 Long</option>
+        <option value="Short">📉 Short</option>
+      </select>
+      
+      <label>Entrada:</label>
+      <input type="number" id="inp-pe" step="0.01" oninput="recalcularRisk()">
+
+      <label>Stop Loss:</label>
+      <input type="number" id="inp-sl" step="0.01" oninput="recalcularRisk()">
+
+      <label>Take Profit:</label>
+      <input type="number" id="inp-tp" step="0.01" oninput="recalcularRisk()">
+
+      <label>Ratio R/R:</label>
+      <span id="txt-rr" style="font-weight:bold; color:var(--pos-green);">1:2.00</span>
+
+      <button class="btn-primary" onclick="guardarEnPortafolio()" style="margin-left:auto;">
+        ➕ Guardar en Portafolio
+      </button>
+    </div>
+
+  </div>
+
+  <!-- PESTAÑA 2: PORTAFOLIO Y FAVORITOS -->
+  <div id="tab-portafolio" class="tab-content">
+    <!-- Se actualiza dinámicamente desde app.js -->
+  </div>
+
+  <!-- Lógica Principal JS -->
+  <script src="js/app.js"></script>
 </body>
 </html>
