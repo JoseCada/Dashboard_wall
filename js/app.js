@@ -23,22 +23,39 @@ async function cargarPestanaScanner() {
 }
 
 // 2. OBTENCIÓN DE DATOS EN TIEMPO REAL (Yahoo Finance API via Proxy)
+// 2. OBTENCIÓN DE DATOS EN TIEMPO REAL (Con mapeo de IDs correcto)
 async function cargarListaMercadoReal() {
   const selElement = document.getElementById('sel-screener');
   const tbody = document.getElementById('tbl-activos-body');
-  if (!selElement || !tbody) return;
+  if (!tbody) return;
 
-  const tipoScreener = selElement.value; // day_gainers, day_losers, most_actives
+  // 1. Mapeo seguro de categorías para Yahoo Finance
+  const opcionesScreener = {
+    'day_gainers': 'day_gainers',
+    'day_losers': 'day_losers',
+    'most_actives': 'most_actives'
+  };
+
+  const valorSeleccionado = selElement ? selElement.value : 'day_gainers';
+  const tipoScreener = opcionesScreener[valorSeleccionado] || 'day_gainers';
+
   tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
-  try {
-    // API Proxy de Yahoo Finance para evitar bloqueos CORS en navegadores
-    const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=50`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+  // URL con parámetro de cantidad e identificador correcto
+  const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=25`;
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
+  try {
     const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error("Respuesta de red no OK");
+
     const data = await res.json();
-    const parsedData = JSON.parse(data.contents);
+    
+    // Parseo seguro de la respuesta envuelta por AllOrigins
+    let parsedData = {};
+    if (data.contents) {
+      parsedData = JSON.parse(data.contents);
+    }
 
     const quotes = parsedData?.finance?.result[0]?.quotes || [];
     datosActualesMercado = quotes;
@@ -46,7 +63,7 @@ async function cargarListaMercadoReal() {
     tbody.innerHTML = '';
 
     if (quotes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sin datos disponibles</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sin datos disponibles en esta categoría</td></tr>';
       return;
     }
 
@@ -71,14 +88,14 @@ async function cargarListaMercadoReal() {
       tbody.appendChild(tr);
     });
 
-    // Seleccionar automáticamente el primer activo recibido
+    // Seleccionar automáticamente el primer activo cargado
     if (quotes.length > 0) {
       seleccionarFilaActivo(quotes[0]);
     }
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor. Intenta cambiar de filtro.</td></tr>';
   }
 }
 
