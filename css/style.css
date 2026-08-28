@@ -170,3 +170,13 @@ body {
   padding: 0;
   line-height: 1;
 }
+
+/* LISTA DE SEGUIMIENTO: el gráfico y la tabla ocupan toda la altura
+   disponible de la pantalla, sin solaparse (columnas independientes) */
+#tab-seguimiento .table-scroll {
+  flex: 1;
+  max-height: none;
+}
+#tab-seguimiento #tv_chart_seguimiento {
+  min-height: 0;
+}

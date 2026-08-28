@@ -106,12 +106,6 @@ function seleccionarFilaActivo(item, filaTr) {
 
   document.getElementById('mb-target').innerText = `$${targetEstimado.toFixed(2)}`;
 
-  // Asignar datos automáticos a la calculadora de riesgo
-  document.getElementById('inp-pe').value = price.toFixed(2);
-  document.getElementById('inp-sl').value = (price * 0.95).toFixed(2);
-  document.getElementById('inp-tp').value = targetEstimado.toFixed(2);
-
-  recalcularRisk();
   renderGraficoTV(item.symbol, timeframeSeleccionado);
 }
 
@@ -190,8 +184,13 @@ function recalcularRisk() {
 
 // 6. PORTAFOLIO (SUPABASE) - accesible desde cualquier equipo
 async function guardarEnPortafolio() {
+  if (!activoSeguimientoSeleccionado) {
+    alert('Selecciona primero un activo de tu Lista de Seguimiento.');
+    return;
+  }
+
   const posicion = {
-    ticker: activoSeleccionado,
+    ticker: activoSeguimientoSeleccionado,
     entry: parseFloat(document.getElementById('inp-pe')?.value) || 0,
     sl: parseFloat(document.getElementById('inp-sl')?.value) || 0,
     tp: parseFloat(document.getElementById('inp-tp')?.value) || 0,
@@ -200,7 +199,7 @@ async function guardarEnPortafolio() {
 
   try {
     await DB.addPosition(posicion);
-    alert(`✅ ${activoSeleccionado} guardado en tu portafolio.`);
+    alert(`✅ ${activoSeguimientoSeleccionado} guardado en tu portafolio.`);
     await renderizarPortafolio();
   } catch (error) {
     alert('❌ No se pudo guardar en Supabase. Revisa la consola del navegador.');
@@ -267,6 +266,7 @@ async function eliminarDelPortafolio(id) {
 // 7. LISTA DE SEGUIMIENTO (WATCHLIST) - independiente del portafolio
 let seguimientoTabCargada = false;
 let activoSeguimientoSeleccionado = null;
+let ultimasCotizacionesSeguimiento = {};
 
 // Cargada la primera vez que se entra a la pestaña (fetch de tabs/tab2.html)
 async function cargarPestanaSeguimiento() {
@@ -330,6 +330,8 @@ async function cargarListaSeguimiento() {
 
   tbody.innerHTML = '';
 
+  const filasPorTicker = {};
+
   items.forEach((item, index) => {
     const cot = cotizaciones[item.ticker] || {};
     const price = cot.regularMarketPrice || 0;
@@ -355,15 +357,14 @@ async function cargarListaSeguimiento() {
     `;
 
     tr.onclick = () => seleccionarActivoSeguimiento(item.ticker, tr);
+    filasPorTicker[item.ticker] = tr;
     tbody.appendChild(tr);
   });
 
-  // Selecciona automáticamente el primero, o redibuja el gráfico si ya había uno activo
-  if (!activoSeguimientoSeleccionado && items.length > 0) {
-    seleccionarActivoSeguimiento(items[0].ticker);
-  } else if (activoSeguimientoSeleccionado) {
-    renderGraficoSeguimiento(activoSeguimientoSeleccionado);
-  }
+  ultimasCotizacionesSeguimiento = cotizaciones;
+
+  const tickerActivo = activoSeguimientoSeleccionado || items[0].ticker;
+  seleccionarActivoSeguimiento(tickerActivo, filasPorTicker[tickerActivo]);
 }
 
 function seleccionarActivoSeguimiento(ticker, filaTr) {
@@ -374,6 +375,31 @@ function seleccionarActivoSeguimiento(ticker, filaTr) {
 
   const tickerEl = document.getElementById('sg-ticker');
   if (tickerEl) tickerEl.innerText = ticker;
+
+  const cot = ultimasCotizacionesSeguimiento[ticker] || {};
+  const price = cot.regularMarketPrice || 0;
+  const change = cot.regularMarketChangePercent || 0;
+
+  const precioEl = document.getElementById('sg-precio');
+  if (precioEl) precioEl.innerText = `$${price.toFixed(2)}`;
+
+  const cambioEl = document.getElementById('sg-cambio');
+  if (cambioEl) {
+    cambioEl.innerText = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+    cambioEl.className = `val ${change >= 0 ? 'text-pos' : 'text-neg'}`;
+  }
+
+  // Autocompletar la calculadora de riesgo con el precio real del activo
+  if (price > 0) {
+    const targetEstimado = price * 1.15;
+    const peEl = document.getElementById('inp-pe');
+    const slEl = document.getElementById('inp-sl');
+    const tpEl = document.getElementById('inp-tp');
+    if (peEl) peEl.value = price.toFixed(2);
+    if (slEl) slEl.value = (price * 0.95).toFixed(2);
+    if (tpEl) tpEl.value = targetEstimado.toFixed(2);
+    recalcularRisk();
+  }
 
   renderGraficoSeguimiento(ticker);
 }

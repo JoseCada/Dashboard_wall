@@ -1,4 +1,4 @@
-<div class="scanner-layout">
+<div class="scanner-layout" style="height: calc(100vh - 110px);">
   <!-- Columna Izquierda: Lista de Seguimiento -->
   <div class="side-card">
     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -24,12 +24,38 @@
     </div>
   </div>
 
-  <!-- Columna Derecha: Análisis profundo (MACD + RSI) -->
+  <!-- Columna Derecha: Análisis profundo (MACD + RSI) + calculadora de riesgo -->
   <div class="chart-card">
     <div class="metrics-bar">
-      <div class="m-item"><span class="lbl">ACTIVO EN ANÁLISIS</span><span class="val" id="sg-ticker">---</span></div>
+      <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="sg-ticker">---</span></div>
+      <div class="m-item"><span class="lbl">PRECIO</span><span class="val" id="sg-precio">$0.00</span></div>
+      <div class="m-item"><span class="lbl">CAMBIO DIA</span><span class="val" id="sg-cambio">0.00%</span></div>
     </div>
 
-    <div id="tv_chart_seguimiento"></div>
+    <div id="tv_chart_seguimiento" style="flex:1; min-height:0;"></div>
+
+    <div class="risk-bar">
+      <label>Tipo:</label>
+      <select id="op-tipo">
+        <option value="Long">📈 Long</option>
+        <option value="Short">📉 Short</option>
+      </select>
+
+      <label>Entrada:</label>
+      <input type="number" id="inp-pe" step="0.01" oninput="recalcularRisk()">
+
+      <label>Stop Loss:</label>
+      <input type="number" id="inp-sl" step="0.01" oninput="recalcularRisk()">
+
+      <label>Take Profit:</label>
+      <input type="number" id="inp-tp" step="0.01" oninput="recalcularRisk()">
+
+      <label>Ratio R/R:</label>
+      <span id="txt-rr" style="font-weight:bold; color:var(--pos-green);">1:2.00</span>
+
+      <button class="btn-primary" onclick="guardarEnPortafolio()" style="margin-left:auto;">
+        ➕ Guardar en Portafolio
+      </button>
+    </div>
   </div>
 </div>
