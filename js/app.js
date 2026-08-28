@@ -22,7 +22,7 @@ async function cargarPestanaScanner() {
   }
 }
 
-// 2. OBTENCIÓN DE DATOS EN TIEMPO REAL (Yahoo Finance API via Proxy)
+// 2. OBTENCIÓN DE DATOS EN TIEMPO REAL (vía Edge Function de Supabase -> FMP)
 async function cargarListaMercadoReal() {
   const selElement = document.getElementById('sel-screener');
   const tbody = document.getElementById('tbl-activos-body');
@@ -32,18 +32,17 @@ async function cargarListaMercadoReal() {
   tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
-    //https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=day_gainers&count=50
-    //https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=day_losers&count=50
-    //https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=most_actives&count=50
-    // API Proxy de Yahoo Finance para evitar bloqueos CORS en navegadores
-    const targetUrl = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=${tipoScreener}&count=15`;
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+    const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
 
-    const res = await fetch(proxyUrl);
-    const data = await res.json();
-    const parsedData = JSON.parse(data.contents);
+    if (!res.ok) {
+      const detalle = await res.json().catch(() => ({}));
+      throw new Error(detalle.error || `Error ${res.status}`);
+    }
 
-    const quotes = parsedData?.finance?.result[0]?.quotes || [];
+    const quotes = await res.json();
     datosActualesMercado = quotes;
 
     tbody.innerHTML = '';
