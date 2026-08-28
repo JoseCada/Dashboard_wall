@@ -1,5 +1,5 @@
 ##Supabase
-Pass = G@toblanco00_Wall
+Pass = GatoGRis00_Wall
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 

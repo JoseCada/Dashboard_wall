@@ -186,31 +186,32 @@ function recalcularRisk() {
   }
 }
 
-// 6. PORTAFOLIO Y LOCALSTORAGE
-function guardarEnPortafolio() {
-  const operacion = {
-    id: Date.now(),
+// 6. PORTAFOLIO (SUPABASE) - accesible desde cualquier equipo
+async function guardarEnPortafolio() {
+  const posicion = {
     ticker: activoSeleccionado,
-    entry: document.getElementById('inp-pe')?.value || "0",
-    sl: document.getElementById('inp-sl')?.value || "0",
-    tp: document.getElementById('inp-tp')?.value || "0",
-    tipo: document.getElementById('op-tipo')?.value || "Long",
-    fecha: new Date().toLocaleDateString()
+    entry: parseFloat(document.getElementById('inp-pe')?.value) || 0,
+    sl: parseFloat(document.getElementById('inp-sl')?.value) || 0,
+    tp: parseFloat(document.getElementById('inp-tp')?.value) || 0,
+    tipo: document.getElementById('op-tipo')?.value || "Long"
   };
 
-  let portafolio = JSON.parse(localStorage.getItem('mi_portafolio') || '[]');
-  portafolio.push(operacion);
-  localStorage.setItem('mi_portafolio', JSON.stringify(portafolio));
-
-  alert(`✅ ${activoSeleccionado} guardado en tu portafolio.`);
-  renderizarPortafolio();
+  try {
+    await DB.addPosition(posicion);
+    alert(`✅ ${activoSeleccionado} guardado en tu portafolio.`);
+    await renderizarPortafolio();
+  } catch (error) {
+    alert('❌ No se pudo guardar en Supabase. Revisa la consola del navegador.');
+  }
 }
 
-function renderizarPortafolio() {
+async function renderizarPortafolio() {
   const contenedor = document.getElementById('tab-portafolio');
   if (!contenedor) return;
 
-  const portafolio = JSON.parse(localStorage.getItem('mi_portafolio') || '[]');
+  contenedor.innerHTML = '<p style="color:#787b86; padding:20px;">Cargando portafolio...</p>';
+
+  const portafolio = await DB.getPositions();
 
   if (portafolio.length === 0) {
     contenedor.innerHTML = `
@@ -238,14 +239,15 @@ function renderizarPortafolio() {
   `;
 
   portafolio.forEach(item => {
+    const fecha = item.created_at ? new Date(item.created_at).toLocaleDateString() : '-';
     html += `
       <tr>
-        <td>${item.fecha}</td>
+        <td>${fecha}</td>
         <td><b>${item.ticker}</b></td>
         <td>${item.tipo}</td>
-        <td>$${item.entry}</td>
-        <td class="text-neg">$${item.sl}</td>
-        <td class="text-pos">$${item.tp}</td>
+        <td>$${Number(item.entry).toFixed(2)}</td>
+        <td class="text-neg">$${Number(item.sl).toFixed(2)}</td>
+        <td class="text-pos">$${Number(item.tp).toFixed(2)}</td>
         <td><button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;" onclick="eliminarDelPortafolio(${item.id})">Eliminar</button></td>
       </tr>
     `;
@@ -255,11 +257,9 @@ function renderizarPortafolio() {
   contenedor.innerHTML = html;
 }
 
-function eliminarDelPortafolio(id) {
-  let portafolio = JSON.parse(localStorage.getItem('mi_portafolio') || '[]');
-  portafolio = portafolio.filter(item => item.id !== id);
-  localStorage.setItem('mi_portafolio', JSON.stringify(portafolio));
-  renderizarPortafolio();
+async function eliminarDelPortafolio(id) {
+  await DB.deletePosition(id);
+  await renderizarPortafolio();
 }
 
 // INICIALIZACIÓN

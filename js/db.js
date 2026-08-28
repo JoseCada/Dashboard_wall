@@ -103,6 +103,66 @@ const DB = {
     },
 
     // ------------------------------------------------------------------------
+    // PESTAÑA 1: POSICIONES GUARDADAS (Calculadora de Riesgo -> Mi Portafolio)
+    // Tabla separada de "trades" (que se reserva para el libro FIFO de las
+    // pestañas 3 y 4). Aquí solo guardamos niveles de entrada/SL/TP.
+    // ------------------------------------------------------------------------
+
+    // Obtener todas las posiciones guardadas
+    async getPositions() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('positions')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error al obtener las posiciones:', error.message);
+            return [];
+        }
+    },
+
+    // Guardar una nueva posición desde la calculadora de riesgo
+    async addPosition(position) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('positions')
+                .insert([{
+                    ticker: position.ticker.toUpperCase(),
+                    tipo: position.tipo,
+                    entry: position.entry,
+                    sl: position.sl,
+                    tp: position.tp
+                }])
+                .select();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error al guardar la posición:', error.message);
+            throw error;
+        }
+    },
+
+    // Eliminar una posición guardada
+    async deletePosition(id) {
+        try {
+            const { error } = await supabaseClient
+                .from('positions')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('Error al eliminar la posición:', error.message);
+            return false;
+        }
+    },
+
+    // ------------------------------------------------------------------------
     // PESTAÑA 3 Y 4: LIBRO DE OPERACIONES Y CARTERA (FIFO)
     // ------------------------------------------------------------------------
 
