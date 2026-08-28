@@ -48,32 +48,9 @@
   </div>
 </div>
 
-<!-- Panel Inferior: Gestión de Riesgo / Entrada -->
-<div class="risk-bar">
-  <label>Tipo:</label>
-  <select id="op-tipo">
-    <option value="Long">📈 Long</option>
-    <option value="Short">📉 Short</option>
-  </select>
-  
-  <label>Entrada:</label>
-  <input type="number" id="inp-pe" step="0.01" oninput="recalcularRisk()">
-
-  <label>Stop Loss:</label>
-  <input type="number" id="inp-sl" step="0.01" oninput="recalcularRisk()">
-
-  <label>Take Profit:</label>
-  <input type="number" id="inp-tp" step="0.01" oninput="recalcularRisk()">
-
-  <label>Ratio R/R:</label>
-  <span id="txt-rr" style="font-weight:bold; color:var(--pos-green);">1:2.00</span>
-
-  <div style="margin-left:auto; display:flex; gap:8px;">
-    <button class="btn-secondary" onclick="agregarASeguimiento()">
-      👁 Seguir
-    </button>
-    <button class="btn-primary" onclick="guardarEnPortafolio()">
-      ➕ Guardar en Portafolio
-    </button>
-  </div>
+<!-- Panel Inferior: Seguimiento rápido -->
+<div class="risk-bar" style="justify-content:flex-end;">
+  <button class="btn-secondary" onclick="agregarASeguimiento()">
+    👁 Seguir este activo
+  </button>
 </div>
