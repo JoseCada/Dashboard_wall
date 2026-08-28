@@ -16,13 +16,17 @@
   <!-- BARRA DE NAVEGACIÓN DE PESTAÑAS -->
   <nav class="tabs-header">
     <button class="tab-btn active" onclick="cambiarPestana('tab-scanner', this)">📋 Scanner & Análisis</button>
+    <button class="tab-btn" onclick="cambiarPestana('tab-seguimiento', this)">👀 Lista de Seguimiento</button>
     <button class="tab-btn" onclick="cambiarPestana('tab-portafolio', this)">💼 Mi Portafolio</button>
   </nav>
 
   <!-- PESTAÑA 1: SCANNER (Cargado dinámicamente) -->
   <div id="tab-scanner" class="tab-content active"></div>
 
-  <!-- PESTAÑA 2: PORTAFOLIO -->
+  <!-- PESTAÑA 2: LISTA DE SEGUIMIENTO (Cargada dinámicamente) -->
+  <div id="tab-seguimiento" class="tab-content"></div>
+
+  <!-- PESTAÑA 3: PORTAFOLIO -->
   <div id="tab-portafolio" class="tab-content"></div>
 
   <!-- Supabase -->

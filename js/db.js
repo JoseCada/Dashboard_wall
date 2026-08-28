@@ -18,19 +18,36 @@ const DB = {
     // PESTAÑA 1 Y 2: LISTA DE SEGUIMIENTO (WATCHLIST)
     // ------------------------------------------------------------------------
     
-    // Obtener la lista de tickers guardados
+    // Obtener la lista de seguimiento completa (favoritos primero)
     async getWatchlist() {
         try {
             const { data, error } = await supabaseClient
                 .from('watchlist')
-                .select('ticker, created_at')
+                .select('ticker, favorito, created_at')
+                .order('favorito', { ascending: false })
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            return data ? data.map(row => row.ticker) : [];
+            return data || [];
         } catch (error) {
             console.error('Error al obtener la lista de seguimiento:', error.message);
             return [];
+        }
+    },
+
+    // Marcar/desmarcar un ticker como favorito dentro de la lista de seguimiento
+    async toggleFavorito(ticker, favorito) {
+        try {
+            const { error } = await supabaseClient
+                .from('watchlist')
+                .update({ favorito })
+                .eq('ticker', ticker);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('Error al actualizar favorito:', error.message);
+            return false;
         }
     },
 
