@@ -3,8 +3,6 @@
 // Hace de proxy hacia Financial Modeling Prep, ocultando la API key y
 // resolviendo CORS de raíz.
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -18,7 +16,8 @@ const FMP_ENDPOINTS: Record<string, string> = {
   most_actives: "most-active",
 };
 
-serve(async (req) => {
+// Deno.serve es global en el runtime de Edge Functions, no requiere import.
+Deno.serve(async (req: Request) => {
   // Preflight CORS
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
