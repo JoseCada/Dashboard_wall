@@ -48,12 +48,18 @@ body {
   display: block;
 }
 
-/* LAYOUT SCANNER */
+/* LAYOUT SCANNER (usado en Scanner y en Lista de Seguimiento) */
 .scanner-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
+  grid-template-rows: 1fr;
   gap: 15px;
   margin-bottom: 15px;
+}
+/* Con esta clase, el layout ocupa toda la altura visible de la pantalla
+   (restando la barra de pestañas + el padding de la propia pestaña) */
+.scanner-layout.full-height {
+  height: calc(100vh - 110px);
 }
 .side-card, .chart-card {
   background: var(--bg-card);
@@ -63,6 +69,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0; /* necesario para que los hijos con flex:1 puedan encoger/crecer bien */
 }
 
 .selectors-row {
@@ -80,7 +87,8 @@ body {
 }
 
 .table-scroll {
-  max-height: 480px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 .mini-table {
@@ -112,9 +120,11 @@ body {
 .m-item .lbl { font-size: 10px; color: #787b86; }
 .m-item .val { font-size: 13px; font-weight: bold; color: #fff; }
 
-#tv_chart_container {
+/* Gráfico de TradingView: ocupa todo el espacio restante dentro de chart-card */
+.tv-chart {
   width: 100%;
-  height: 480px;
+  flex: 1;
+  min-height: 0;
   border-radius: 4px;
   overflow: hidden;
   background: var(--bg-dark);
@@ -169,14 +179,4 @@ body {
   font-size: 15px;
   padding: 0;
   line-height: 1;
-}
-
-/* LISTA DE SEGUIMIENTO: el gráfico y la tabla ocupan toda la altura
-   disponible de la pantalla, sin solaparse (columnas independientes) */
-#tab-seguimiento .table-scroll {
-  flex: 1;
-  max-height: none;
-}
-#tab-seguimiento #tv_chart_seguimiento {
-  min-height: 0;
 }
