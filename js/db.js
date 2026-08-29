@@ -151,7 +151,10 @@ const DB = {
                     tipo: position.tipo,
                     entry: position.entry,
                     sl: position.sl,
-                    tp: position.tp
+                    tp: position.tp,
+                    cantidad: position.cantidad || 1,
+                    precio_creacion: position.precioCreacion || position.entry,
+                    estado: 'PENDIENTE'
                 }])
                 .select();
 
@@ -160,6 +163,23 @@ const DB = {
         } catch (error) {
             console.error('Error al guardar la posición:', error.message);
             throw error;
+        }
+    },
+
+    // Actualizar estado/resultado/cierre de una posición (usado por la
+    // comprobación automática de precios)
+    async updatePosition(id, updates) {
+        try {
+            const { error } = await supabaseClient
+                .from('positions')
+                .update(updates)
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('Error al actualizar la posición:', error.message);
+            return false;
         }
     },
 

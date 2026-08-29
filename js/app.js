@@ -719,30 +719,64 @@ async function cargarInformeFiscal() {
   document.getElementById('fis-num').innerText = ultimoInformeFiscal.length;
 }
 
-function descargarCSVFiscal() {
+function descargarPDFFiscal() {
   if (ultimoInformeFiscal.length === 0) {
     alert('No hay operaciones para exportar en este año.');
     return;
   }
 
-  const selAnio = document.getElementById('sel-fiscal-anio');
-  const anio = selAnio?.value || 'informe';
+  if (typeof window.jspdf === 'undefined') {
+    alert('No se pudo cargar la librería de PDF. Revisa tu conexión e inténtalo de nuevo.');
+    return;
+  }
 
-  let csv = 'Fecha cierre;Ticker;Tipo;Cantidad;Entrada;Cierre;Resultado;Importe (EUR)\n';
-  ultimoInformeFiscal.forEach(op => {
-    const fechaCierre = op.closed_at ? new Date(op.closed_at).toLocaleDateString() : '-';
-    csv += `${fechaCierre};${op.ticker};${op.tipo};${op.cantidad};${Number(op.entry).toFixed(2)};${Number(op.close_price).toFixed(2)};${op.resultado};${op.importe.toFixed(2)}\n`;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const selAnio = document.getElementById('sel-fiscal-anio');
+  const anio = selAnio?.value || new Date().getFullYear();
+
+  const ganancias = ultimoInformeFiscal.filter(o => o.importe > 0).reduce((s, o) => s + o.importe, 0);
+  const perdidas = ultimoInformeFiscal.filter(o => o.importe < 0).reduce((s, o) => s + o.importe, 0);
+  const neto = ganancias + perdidas;
+
+  doc.setFontSize(16);
+  doc.text(`Informe de operaciones cerradas - ${anio}`, 14, 18);
+
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text(
+    'Documento generado a partir de las operaciones registradas en el dashboard.\n' +
+    'No sustituye el asesoramiento de un gestor o asesor fiscal para presentar la declaración.',
+    14, 26
+  );
+
+  doc.autoTable({
+    startY: 38,
+    head: [['Fecha cierre', 'Ticker', 'Tipo', 'Cantidad', 'Entrada', 'Cierre', 'Resultado', 'Importe (EUR)']],
+    body: ultimoInformeFiscal.map(op => [
+      op.closed_at ? new Date(op.closed_at).toLocaleDateString() : '-',
+      op.ticker,
+      op.tipo,
+      op.cantidad,
+      `$${Number(op.entry).toFixed(2)}`,
+      `$${Number(op.close_price).toFixed(2)}`,
+      op.resultado === 'GANADORA' ? 'Ganadora' : 'Perdedora',
+      `${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} €`
+    ]),
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [41, 98, 255] }
   });
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `operaciones_fiscal_${anio}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.setFontSize(11);
+  doc.setTextColor(0);
+  doc.text(`Ganancias totales: ${ganancias.toFixed(2)} €`, 14, finalY);
+  doc.text(`Pérdidas totales: ${perdidas.toFixed(2)} €`, 14, finalY + 7);
+  doc.setFont(undefined, 'bold');
+  doc.text(`Resultado neto: ${neto.toFixed(2)} €`, 14, finalY + 14);
+
+  doc.save(`operaciones_fiscal_${anio}.pdf`);
 }
 
 // INICIALIZACIÓN

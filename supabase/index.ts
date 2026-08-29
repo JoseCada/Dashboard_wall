@@ -1,143 +1,146 @@
-// Supabase Edge Function: market-screener
-// Sustituye al scraping directo de Yahoo Finance (que ya exige login/crumb).
-// Hace de proxy hacia Financial Modeling Prep, ocultando la API key y
-// resolviendo CORS de raíz.
+// Supabase Edge Function: check-positions
+// Comprueba el precio de mercado de cada operación abierta y actualiza
+// su estado automáticamente: PENDIENTE -> ACTIVA -> CERRADA (GANADORA/PERDEDORA).
+// No la llama el navegador: la invoca un Cron Job de Supabase cada X minutos,
+// así que la lógica funciona aunque el dashboard esté cerrado.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Mapeo de los valores que ya usa tu <select id="sel-screener"> a los
-// endpoints "stable" de Financial Modeling Prep.
-const FMP_ENDPOINTS: Record<string, string> = {
-  day_gainers: "biggest-gainers",
-  day_losers: "biggest-losers",
-  most_actives: "most-active",
-};
-
-// Deno.serve es global en el runtime de Edge Functions, no requiere import.
-Deno.serve(async (req: Request) => {
-  // Preflight CORS
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
+Deno.serve(async (_req: Request) => {
   try {
-    const url = new URL(req.url);
-    const tipo = url.searchParams.get("type") || "day_gainers";
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const FMP_API_KEY = Deno.env.get("FMP_API_KEY");
 
-    const apiKey = Deno.env.get("FMP_API_KEY");
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "Falta configurar el secret FMP_API_KEY" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Clave con permisos de servidor (bypassa RLS). Probamos primero el
+    // sistema de claves nuevo, y si no existe, el legado.
+    let SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!SERVICE_KEY) {
+      const secretsJson = Deno.env.get("SUPABASE_SECRET_KEYS");
+      if (secretsJson) {
+        try {
+          const secrets = JSON.parse(secretsJson);
+          SERVICE_KEY = Object.values(secrets)[0] as string;
+        } catch (_) {
+          // se valida más abajo
         }
+      }
+    }
+
+    if (!SUPABASE_URL || !SERVICE_KEY || !FMP_API_KEY) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Faltan variables de entorno (SUPABASE_URL, clave de servicio o FMP_API_KEY)",
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Modo "quote": cotizaciones puntuales para tickers concretos
-    // (usado por la Lista de Seguimiento, cuyos tickers no siempre
-    // aparecen en gainers/losers/actives).
-    if (tipo === "quote") {
-      const symbolsParam = url.searchParams.get("symbols");
-      if (!symbolsParam) {
-        return new Response(
-          JSON.stringify({ error: "Falta el parámetro symbols" }),
+    const headers = {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      "Content-Type": "application/json",
+    };
+
+    // 1. Traer operaciones abiertas (PENDIENTE o ACTIVA)
+    const posRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/positions?estado=neq.CERRADA&select=*`,
+      { headers }
+    );
+    if (!posRes.ok) throw new Error(`Error leyendo positions: ${posRes.status}`);
+    const abiertas = await posRes.json();
+
+    if (!Array.isArray(abiertas) || abiertas.length === 0) {
+      return new Response(JSON.stringify({ mensaje: "Sin operaciones abiertas" }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // 2. Cotizaciones en lote desde Financial Modeling Prep
+    const tickers = [...new Set(abiertas.map((p: any) => p.ticker))].join(",");
+    const quoteRes = await fetch(
+      `https://financialmodelingprep.com/stable/batch-quote?symbols=${encodeURIComponent(
+        tickers
+      )}&apikey=${FMP_API_KEY}`
+    );
+    if (!quoteRes.ok) throw new Error(`Error de FMP: ${quoteRes.status}`);
+    const quotes = await quoteRes.json();
+
+    const precios: Record<string, number> = {};
+    (Array.isArray(quotes) ? quotes : []).forEach((q: any) => {
+      precios[q.symbol] = Number(q.price) || 0;
+    });
+
+    // 3. Evaluar y actualizar cada operación que cambie de estado
+    let actualizadas = 0;
+
+    for (const pos of abiertas) {
+      const precioActual = precios[pos.ticker];
+      if (!precioActual) continue;
+
+      let nuevoEstado = pos.estado;
+      let nuevoResultado = pos.resultado;
+      let closePrice: number | null = null;
+
+      if (nuevoEstado === "PENDIENTE") {
+        const precioBase = Number(pos.precio_creacion) || Number(pos.entry);
+        const entry = Number(pos.entry);
+        const tocoEntrada =
+          precioBase === entry ||
+          (precioBase < entry ? precioActual >= entry : precioActual <= entry);
+        if (tocoEntrada) nuevoEstado = "ACTIVA";
+      }
+
+      if (nuevoEstado === "ACTIVA") {
+        const esLong = pos.tipo !== "Short";
+        if (esLong) {
+          if (precioActual >= Number(pos.tp)) {
+            nuevoEstado = "CERRADA";
+            nuevoResultado = "GANADORA";
+            closePrice = precioActual;
+          } else if (precioActual <= Number(pos.sl)) {
+            nuevoEstado = "CERRADA";
+            nuevoResultado = "PERDEDORA";
+            closePrice = precioActual;
+          }
+        } else {
+          if (precioActual <= Number(pos.tp)) {
+            nuevoEstado = "CERRADA";
+            nuevoResultado = "GANADORA";
+            closePrice = precioActual;
+          } else if (precioActual >= Number(pos.sl)) {
+            nuevoEstado = "CERRADA";
+            nuevoResultado = "PERDEDORA";
+            closePrice = precioActual;
+          }
+        }
+      }
+
+      if (nuevoEstado !== pos.estado) {
+        const updateRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/positions?id=eq.${pos.id}`,
           {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            method: "PATCH",
+            headers: { ...headers, Prefer: "return=minimal" },
+            body: JSON.stringify({
+              estado: nuevoEstado,
+              resultado: nuevoResultado,
+              close_price: closePrice,
+              closed_at:
+                nuevoEstado === "CERRADA" ? new Date().toISOString() : null,
+            }),
           }
         );
+        if (updateRes.ok) actualizadas++;
       }
-
-      const quoteUrl = `https://financialmodelingprep.com/stable/batch-quote?symbols=${encodeURIComponent(
-        symbolsParam
-      )}&apikey=${apiKey}`;
-      const quoteRes = await fetch(quoteUrl);
-
-      if (!quoteRes.ok) {
-        throw new Error(`Financial Modeling Prep respondió ${quoteRes.status}`);
-      }
-
-      const quoteData = await quoteRes.json();
-      const quoteLista = Array.isArray(quoteData) ? quoteData : [quoteData];
-
-      const quoteNormalizado = quoteLista.map((item: any) => {
-        const price = Number(item.price) || 0;
-        let cambioPct = item.changePercentage ?? item.changesPercentage;
-
-        // Si el endpoint no trae el % directamente, lo calculamos con
-        // el cambio absoluto (change) y el precio actual.
-        if (cambioPct === undefined || cambioPct === null) {
-          const cambioAbs = Number(item.change) || 0;
-          const precioAnterior = price - cambioAbs;
-          cambioPct = precioAnterior !== 0 ? (cambioAbs / precioAnterior) * 100 : 0;
-        }
-
-        return {
-          symbol: item.symbol,
-          regularMarketPrice: price,
-          regularMarketChangePercent: Number(cambioPct) || 0,
-        };
-      });
-
-      return new Response(JSON.stringify(quoteNormalizado), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
-    // Modo screener normal: day_gainers / day_losers / most_actives
-    const count = Math.min(
-      Math.max(parseInt(url.searchParams.get("count") || "50", 10), 1),
-      100
+    return new Response(
+      JSON.stringify({ revisadas: abiertas.length, actualizadas }),
+      { headers: { "Content-Type": "application/json" } }
     );
-
-    const endpoint = FMP_ENDPOINTS[tipo];
-    if (!endpoint) {
-      return new Response(
-        JSON.stringify({ error: `Tipo de screener no válido: ${tipo}` }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const fmpUrl = `https://financialmodelingprep.com/stable/${endpoint}?apikey=${apiKey}`;
-    const fmpRes = await fetch(fmpUrl);
-
-    if (!fmpRes.ok) {
-      throw new Error(`Financial Modeling Prep respondió ${fmpRes.status}`);
-    }
-
-    const data = await fmpRes.json();
-    const lista = Array.isArray(data) ? data : [];
-
-    // Normalizamos al mismo formato que ya esperaba tu app.js
-    // (regularMarketPrice / regularMarketChangePercent), para no tener
-    // que tocar el resto del código.
-    const normalizado = lista.slice(0, count).map((item: any) => {
-      let cambio = item.changesPercentage ?? item.changePercentage ?? 0;
-      if (typeof cambio === "string") {
-        cambio = parseFloat(cambio.replace("%", ""));
-      }
-      return {
-        symbol: item.symbol,
-        regularMarketPrice: Number(item.price) || 0,
-        regularMarketChangePercent: Number(cambio) || 0,
-      };
-    });
-
-    return new Response(JSON.stringify(normalizado), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (error) {
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     });
   }
 });
