@@ -1,4 +1,4 @@
-<div class="scanner-layout">
+<div class="scanner-layout full-height">
   <!-- Columna Izquierda: Scanner Real -->
   <div class="side-card">
     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -34,7 +34,7 @@
     </div>
   </div>
 
-  <!-- Columna Derecha: Métricas y TradingView -->
+  <!-- Columna Derecha: Métricas, TradingView y acción rápida -->
   <div class="chart-card">
     <div class="metrics-bar">
       <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="mb-ticker">---</span></div>
@@ -44,13 +44,12 @@
       <div class="m-item"><span class="lbl">R/R ESTIMADO</span><span class="val text-pos" id="mb-rr">1:2.0</span></div>
     </div>
 
-    <div id="tv_chart_container"></div>
-  </div>
-</div>
+    <div id="tv_chart_container" class="tv-chart"></div>
 
-<!-- Panel Inferior: Seguimiento rápido -->
-<div class="risk-bar" style="justify-content:flex-end;">
-  <button class="btn-secondary" onclick="agregarASeguimiento()">
-    👁 Seguir este activo
-  </button>
+    <div class="risk-bar" style="justify-content:flex-end;">
+      <button class="btn-secondary" onclick="agregarASeguimiento()">
+        👁 Seguir este activo
+      </button>
+    </div>
+  </div>
 </div>
