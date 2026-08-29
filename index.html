@@ -1,4 +1,3 @@
-<!--https://josecada.github.io/Dashboard_wall/-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -19,6 +18,7 @@
     <button class="tab-btn active" onclick="cambiarPestana('tab-scanner', this)">📋 Scanner & Análisis</button>
     <button class="tab-btn" onclick="cambiarPestana('tab-seguimiento', this)">👀 Lista de Seguimiento</button>
     <button class="tab-btn" onclick="cambiarPestana('tab-portafolio', this)">💼 Mi Portafolio</button>
+    <button class="tab-btn" onclick="cambiarPestana('tab-fiscal', this)">📑 Fiscal</button>
   </nav>
 
   <!-- PESTAÑA 1: SCANNER (Cargado dinámicamente) -->
@@ -29,6 +29,9 @@
 
   <!-- PESTAÑA 3: PORTAFOLIO -->
   <div id="tab-portafolio" class="tab-content"></div>
+
+  <!-- PESTAÑA 4: FISCAL (Cargada dinámicamente) -->
+  <div id="tab-fiscal" class="tab-content"></div>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

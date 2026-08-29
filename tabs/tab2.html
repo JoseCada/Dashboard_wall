@@ -6,6 +6,11 @@
       <button onclick="cargarListaSeguimiento()" style="background:none; border:none; color:#787b86; cursor:pointer;" title="Recargar precios">🔄</button>
     </div>
 
+    <div style="display:flex; gap:6px;">
+      <input type="text" id="inp-ticker-manual-seg" placeholder="Añadir ticker (ej. AAPL)" style="flex:1; background:#2a2e39; color:#fff; border:1px solid #363c4e; padding:6px; border-radius:4px; font-size:12px; text-transform:uppercase;" onkeydown="if(event.key==='Enter') agregarManualSeguimiento();">
+      <button class="btn-secondary" onclick="agregarManualSeguimiento()">➕</button>
+    </div>
+
     <div class="table-scroll">
       <table class="mini-table">
         <thead>
@@ -40,6 +45,9 @@
         <option value="Long">📈 Long</option>
         <option value="Short">📉 Short</option>
       </select>
+
+      <label>Cantidad:</label>
+      <input type="number" id="inp-cantidad" step="1" min="1" value="1">
 
       <label>Entrada:</label>
       <input type="number" id="inp-pe" step="0.01" oninput="recalcularRisk()">

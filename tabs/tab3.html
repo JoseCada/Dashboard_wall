@@ -1,0 +1,45 @@
+<div style="display:flex; flex-direction:column; gap:15px;">
+  <div class="side-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <h4 style="margin:0; color:#fff;">📑 Control Fiscal (IRPF - España)</h4>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label>Año:</label>
+        <select id="sel-fiscal-anio" onchange="cargarInformeFiscal()"></select>
+        <button class="btn-secondary" onclick="descargarCSVFiscal()">⬇️ Descargar CSV</button>
+      </div>
+    </div>
+    <p style="color:#787b86; font-size:12px; margin:8px 0 0 0;">
+      Este resumen organiza tus operaciones cerradas registradas en la app. No sustituye el
+      asesoramiento de un gestor o asesor fiscal para presentar tu declaración.
+    </p>
+  </div>
+
+  <div class="metrics-bar">
+    <div class="m-item"><span class="lbl">GANANCIAS</span><span class="val text-pos" id="fis-ganancias">0,00 €</span></div>
+    <div class="m-item"><span class="lbl">PÉRDIDAS</span><span class="val text-neg" id="fis-perdidas">0,00 €</span></div>
+    <div class="m-item"><span class="lbl">RESULTADO NETO</span><span class="val" id="fis-neto">0,00 €</span></div>
+    <div class="m-item"><span class="lbl">OPERACIONES CERRADAS</span><span class="val" id="fis-num">0</span></div>
+  </div>
+
+  <div class="side-card">
+    <div class="table-scroll">
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>Fecha cierre</th>
+            <th>Ticker</th>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+            <th>Entrada</th>
+            <th>Cierre</th>
+            <th>Resultado</th>
+            <th>Importe</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-fiscal-body">
+          <tr><td colspan="8" style="text-align:center; color:#787b86;">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
