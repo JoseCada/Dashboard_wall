@@ -26,6 +26,70 @@ Deno.serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     const tipo = url.searchParams.get("type") || "day_gainers";
+
+    const apiKey = Deno.env.get("FMP_API_KEY");
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "Falta configurar el secret FMP_API_KEY" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Modo "quote": cotizaciones puntuales para tickers concretos
+    // (usado por la Lista de Seguimiento, cuyos tickers no siempre
+    // aparecen en gainers/losers/actives).
+    if (tipo === "quote") {
+      const symbolsParam = url.searchParams.get("symbols");
+      if (!symbolsParam) {
+        return new Response(
+          JSON.stringify({ error: "Falta el parámetro symbols" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const quoteUrl = `https://financialmodelingprep.com/stable/batch-quote?symbols=${encodeURIComponent(
+        symbolsParam
+      )}&apikey=${apiKey}`;
+      const quoteRes = await fetch(quoteUrl);
+
+      if (!quoteRes.ok) {
+        throw new Error(`Financial Modeling Prep respondió ${quoteRes.status}`);
+      }
+
+      const quoteData = await quoteRes.json();
+      const quoteLista = Array.isArray(quoteData) ? quoteData : [quoteData];
+
+      const quoteNormalizado = quoteLista.map((item: any) => {
+        const price = Number(item.price) || 0;
+        let cambioPct = item.changePercentage ?? item.changesPercentage;
+
+        // Si el endpoint no trae el % directamente, lo calculamos con
+        // el cambio absoluto (change) y el precio actual.
+        if (cambioPct === undefined || cambioPct === null) {
+          const cambioAbs = Number(item.change) || 0;
+          const precioAnterior = price - cambioAbs;
+          cambioPct = precioAnterior !== 0 ? (cambioAbs / precioAnterior) * 100 : 0;
+        }
+
+        return {
+          symbol: item.symbol,
+          regularMarketPrice: price,
+          regularMarketChangePercent: Number(cambioPct) || 0,
+        };
+      });
+
+      return new Response(JSON.stringify(quoteNormalizado), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Modo screener normal: day_gainers / day_losers / most_actives
     const count = Math.min(
       Math.max(parseInt(url.searchParams.get("count") || "50", 10), 1),
       100
@@ -37,17 +101,6 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ error: `Tipo de screener no válido: ${tipo}` }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const apiKey = Deno.env.get("FMP_API_KEY");
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "Falta configurar el secret FMP_API_KEY" }),
-        {
-          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
