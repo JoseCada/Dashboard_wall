@@ -425,7 +425,7 @@ function renderGraficoSeguimiento(symbol) {
     new TradingView.widget({
       "autosize": true,
       "symbol": symbol,
-      "interval": "S",
+      "interval": "D",
       "timezone": "Etc/UTC",
       "theme": "dark",
       "style": "1",
