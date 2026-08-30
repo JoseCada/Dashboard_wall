@@ -130,7 +130,31 @@ function seleccionarFilaActivo(item, filaTr) {
 
   document.getElementById('mb-target').innerText = `$${targetEstimado.toFixed(2)}`;
 
+  actualizarAnalistas(item.symbol);
   renderGraficoTV(item.symbol, timeframeSeleccionado);
+}
+
+// Solo se pide para el activo seleccionado (no para las 50 filas, por cuota de FMP)
+async function actualizarAnalistas(symbol) {
+  const el = document.getElementById('mb-analistas');
+  if (!el) return;
+  el.innerText = '…';
+
+  try {
+    const url = `${SUPABASE_URL}/functions/v1/market-screener?type=analistas&symbol=${encodeURIComponent(symbol)}`;
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${await obtenerTokenSesion()}` } });
+
+    if (!res.ok) {
+      el.innerText = 'N/D';
+      return;
+    }
+
+    const data = await res.json();
+    el.innerText = data.analistas > 0 ? data.analistas : 'N/D';
+  } catch (error) {
+    console.error('Error al obtener el número de analistas:', error);
+    el.innerText = 'N/D';
+  }
 }
 
 // 4. RENDERIZAR TRADINGVIEW (Scanner) - gráfico completo con MACD + RSI
