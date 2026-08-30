@@ -6,6 +6,10 @@
       <button onclick="cargarListaMercadoReal()" style="background:none; border:none; color:#787b86; cursor:pointer;" title="Recargar mercado">🔄</button>
     </div>
 
+    <div style="display:flex; gap:6px;">
+      <input type="text" id="inp-buscar-universo" placeholder="🔍 Buscar cualquier ticker o empresa (NASDAQ/NYSE)..." style="flex:1; background:#2a2e39; color:#fff; border:1px solid #363c4e; padding:6px; border-radius:4px; font-size:12px;" oninput="buscarEnUniverso(this.value)">
+    </div>
+
     <div class="selectors-row">
       <select id="sel-screener" onchange="cargarListaMercadoReal()">
         <option value="day_gainers">🚀 Top Ganadores</option>
@@ -23,12 +27,13 @@
         <thead>
           <tr>
             <th>Ticker</th>
+            <th>Nombre</th>
             <th>Precio</th>
             <th>Cambio</th>
           </tr>
         </thead>
         <tbody id="tbl-activos-body">
-          <tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando datos en vivo...</td></tr>
+          <tr><td colspan="4" style="text-align:center; color:#787b86;">Cargando datos en vivo...</td></tr>
         </tbody>
       </table>
     </div>

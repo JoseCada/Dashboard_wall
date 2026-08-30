@@ -55,7 +55,7 @@ async function cargarListaMercadoReal() {
   if (!selElement || !tbody) return;
 
   const tipoScreener = selElement.value;
-  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
@@ -74,7 +74,7 @@ async function cargarListaMercadoReal() {
     tbody.innerHTML = '';
 
     if (quotes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sin datos disponibles</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sin datos disponibles</td></tr>';
       return;
     }
 
@@ -91,6 +91,7 @@ async function cargarListaMercadoReal() {
 
       tr.innerHTML = `
         <td><b>${symbol}</b></td>
+        <td style="color:#787b86; font-size:11px;">${item.name || ''}</td>
         <td>$${price.toFixed(2)}</td>
         <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
       `;
@@ -105,7 +106,7 @@ async function cargarListaMercadoReal() {
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
   }
 }
 
@@ -149,6 +150,85 @@ function renderGraficoTV(symbol, interval) {
 function cambiarTimeframe(tf) {
   timeframeSeleccionado = tf;
   renderGraficoTV(activoSeleccionado, timeframeSeleccionado);
+}
+
+// UNIVERSO COMPLETO (NASDAQ + NYSE/NYSE American/ARCA) para buscar
+// cualquier ticker, no solo los que salen en gainers/losers/actives.
+let universoCompleto = null; // se carga una vez y se cachea en memoria
+let universoCargando = null;
+
+async function obtenerUniverso() {
+  if (universoCompleto) return universoCompleto;
+  if (universoCargando) return universoCargando;
+
+  universoCargando = (async () => {
+    try {
+      const url = `${SUPABASE_URL}/functions/v1/market-screener?type=universo`;
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${await obtenerTokenSesion()}` } });
+      if (!res.ok) return [];
+      const data = await res.json();
+      universoCompleto = Array.isArray(data) ? data : [];
+      return universoCompleto;
+    } catch (error) {
+      console.error('Error al cargar el universo de tickers:', error);
+      return [];
+    }
+  })();
+
+  return universoCargando;
+}
+
+async function buscarEnUniverso(query) {
+  const tbody = document.getElementById('tbl-activos-body');
+  if (!tbody) return;
+
+  const texto = query.trim().toLowerCase();
+
+  if (!texto) {
+    cargarListaMercadoReal(); // campo vacío -> vuelve a ganadores/perdedores/activos
+    return;
+  }
+
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
+
+  const universo = await obtenerUniverso();
+  const coincidencias = universo
+    .filter(it => it.symbol.toLowerCase().includes(texto) || it.name.toLowerCase().includes(texto))
+    .slice(0, 50);
+
+  tbody.innerHTML = '';
+
+  if (coincidencias.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Sin resultados</td></tr>';
+    return;
+  }
+
+  coincidencias.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${item.symbol}</b></td>
+      <td style="color:#787b86; font-size:11px;">${item.name}</td>
+      <td colspan="2" style="color:#787b86;">Ver gráfico →</td>
+    `;
+    tr.onclick = () => seleccionarActivoUniverso(item, tr);
+    tbody.appendChild(tr);
+  });
+}
+
+function seleccionarActivoUniverso(item, filaTr) {
+  activoSeleccionado = item.symbol;
+
+  document.querySelectorAll('#tbl-activos-body tr').forEach(r => r.classList.remove('active-row'));
+  if (filaTr) filaTr.classList.add('active-row');
+
+  document.getElementById('mb-ticker').innerText = item.symbol;
+  document.getElementById('mb-precio').innerText = '—';
+  const mbUpside = document.getElementById('mb-upside');
+  mbUpside.innerText = '—';
+  mbUpside.className = 'val';
+  document.getElementById('mb-target').innerText = '—';
+
+  renderGraficoTV(item.symbol, timeframeSeleccionado);
 }
 
 // 5. NAVEGACIÓN Y CÁLCULO DE RIESGO
