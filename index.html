@@ -17,25 +17,41 @@
 </head>
 <body>
 
-  <!-- BARRA DE NAVEGACIÓN DE PESTAÑAS -->
-  <nav class="tabs-header">
-    <button class="tab-btn active" onclick="cambiarPestana('tab-scanner', this)">📋 Scanner & Análisis</button>
-    <button class="tab-btn" onclick="cambiarPestana('tab-seguimiento', this)">👀 Lista de Seguimiento</button>
-    <button class="tab-btn" onclick="cambiarPestana('tab-portafolio', this)">💼 Mi Portafolio</button>
-    <button class="tab-btn" onclick="cambiarPestana('tab-fiscal', this)">📑 Fiscal</button>
-  </nav>
+  <!-- PANTALLA DE LOGIN -->
+  <div id="login-screen" style="display:flex; align-items:center; justify-content:center; height:100vh;">
+    <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:30px; width:300px; display:flex; flex-direction:column; gap:12px;">
+      <h3 style="margin:0; color:#fff; text-align:center;">🔒 Acceso privado</h3>
+      <input type="email" id="login-email" placeholder="Email" style="background:#2a2e39; color:#fff; border:1px solid #363c4e; padding:8px; border-radius:4px;">
+      <input type="password" id="login-password" placeholder="Contraseña" style="background:#2a2e39; color:#fff; border:1px solid #363c4e; padding:8px; border-radius:4px;" onkeydown="if(event.key==='Enter') iniciarSesion();">
+      <button class="btn-primary" onclick="iniciarSesion()">Entrar</button>
+      <p id="login-error" style="color:var(--neg-red); font-size:12px; margin:0; display:none;"></p>
+    </div>
+  </div>
 
-  <!-- PESTAÑA 1: SCANNER (Cargado dinámicamente) -->
-  <div id="tab-scanner" class="tab-content active"></div>
+  <!-- CONTENIDO DEL DASHBOARD (oculto hasta iniciar sesión) -->
+  <div id="app-content" style="display:none;">
 
-  <!-- PESTAÑA 2: LISTA DE SEGUIMIENTO (Cargada dinámicamente) -->
-  <div id="tab-seguimiento" class="tab-content"></div>
+    <nav class="tabs-header">
+      <button class="tab-btn active" onclick="cambiarPestana('tab-scanner', this)">📋 Scanner & Análisis</button>
+      <button class="tab-btn" onclick="cambiarPestana('tab-seguimiento', this)">👀 Lista de Seguimiento</button>
+      <button class="tab-btn" onclick="cambiarPestana('tab-portafolio', this)">💼 Mi Portafolio</button>
+      <button class="tab-btn" onclick="cambiarPestana('tab-fiscal', this)">📑 Fiscal</button>
+      <button class="tab-btn" onclick="cerrarSesion()" style="margin-left:auto; color:#787b86;">🚪 Salir</button>
+    </nav>
 
-  <!-- PESTAÑA 3: PORTAFOLIO -->
-  <div id="tab-portafolio" class="tab-content"></div>
+    <!-- PESTAÑA 1: SCANNER (Cargado dinámicamente) -->
+    <div id="tab-scanner" class="tab-content active"></div>
 
-  <!-- PESTAÑA 4: FISCAL (Cargada dinámicamente) -->
-  <div id="tab-fiscal" class="tab-content"></div>
+    <!-- PESTAÑA 2: LISTA DE SEGUIMIENTO (Cargada dinámicamente) -->
+    <div id="tab-seguimiento" class="tab-content"></div>
+
+    <!-- PESTAÑA 3: PORTAFOLIO -->
+    <div id="tab-portafolio" class="tab-content"></div>
+
+    <!-- PESTAÑA 4: FISCAL (Cargada dinámicamente) -->
+    <div id="tab-fiscal" class="tab-content"></div>
+
+  </div>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

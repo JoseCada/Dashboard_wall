@@ -60,7 +60,7 @@ async function cargarListaMercadoReal() {
   try {
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
     const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      headers: { 'Authorization': `Bearer ${await obtenerTokenSesion()}` }
     });
 
     if (!res.ok) {
@@ -206,7 +206,7 @@ async function obtenerCotizaciones(tickersArray) {
   try {
     const tickers = [...new Set(tickersArray)].join(',');
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=quote&symbols=${encodeURIComponent(tickers)}`;
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${SUPABASE_KEY}` } });
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${await obtenerTokenSesion()}` } });
     if (res.ok) {
       const quotes = await res.json();
       quotes.forEach(q => { cotizaciones[q.symbol] = q; });
@@ -779,7 +779,51 @@ function descargarPDFFiscal() {
   doc.save(`operaciones_fiscal_${anio}.pdf`);
 }
 
-// INICIALIZACIÓN
-window.addEventListener('DOMContentLoaded', () => {
+// AUTENTICACIÓN (acceso privado con Supabase Auth)
+async function obtenerTokenSesion() {
+  const { data } = await supabaseClient.auth.getSession();
+  return data?.session?.access_token || SUPABASE_KEY;
+}
+
+function mostrarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-content').style.display = 'block';
   cargarPestanaScanner();
+}
+
+async function iniciarSesion() {
+  const email = document.getElementById('login-email')?.value || '';
+  const password = document.getElementById('login-password')?.value || '';
+  const errorEl = document.getElementById('login-error');
+  if (errorEl) errorEl.style.display = 'none';
+
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    if (errorEl) {
+      errorEl.textContent = 'Email o contraseña incorrectos.';
+      errorEl.style.display = 'block';
+    }
+    return;
+  }
+
+  mostrarApp();
+}
+
+async function cerrarSesion() {
+  await supabaseClient.auth.signOut();
+  document.getElementById('app-content').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+// INICIALIZACIÓN
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data } = await supabaseClient.auth.getSession();
+  if (data?.session) {
+    mostrarApp();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
 });
