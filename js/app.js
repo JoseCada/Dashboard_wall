@@ -55,7 +55,7 @@ async function cargarListaMercadoReal() {
   if (!selElement || !tbody) return;
 
   const tipoScreener = selElement.value;
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
@@ -74,7 +74,7 @@ async function cargarListaMercadoReal() {
     tbody.innerHTML = '';
 
     if (quotes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sin datos disponibles</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Sin datos disponibles</td></tr>';
       return;
     }
 
@@ -82,20 +82,17 @@ async function cargarListaMercadoReal() {
       const symbol = item.symbol;
       const price = item.regularMarketPrice || 0;
       const change = item.regularMarketChangePercent || 0;
-      const pctMax = item.pctHastaMaximo52;
 
       const tr = document.createElement('tr');
       if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
 
       const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
       const signo = change >= 0 ? '+' : '';
-      const pctMaxTexto = (pctMax === null || pctMax === undefined) ? '—' : `${pctMax >= 0 ? '+' : ''}${pctMax.toFixed(1)}%`;
 
       tr.innerHTML = `
         <td><b>${symbol}</b></td>
         <td>$${price.toFixed(2)}</td>
         <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
-        <td style="color:#787b86;">${pctMaxTexto}</td>
       `;
 
       tr.onclick = () => seleccionarFilaActivo(item, tr);
@@ -108,7 +105,7 @@ async function cargarListaMercadoReal() {
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
   }
 }
 
