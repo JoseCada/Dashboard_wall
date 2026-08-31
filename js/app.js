@@ -2,16 +2,12 @@ let activoSeleccionado = "NVDA";
 let timeframeSeleccionado = "D";
 let datosActualesMercado = [];
 
-// Conjunto de indicadores por defecto: MACD + Medias Móviles Exponenciales
-// de 10, 20, 50, 100 y 200 periodos.
-const ESTUDIOS_MME = [
-  "MACD@tv-basicstudies",
-  { id: "MAExp@tv-basicstudies", inputs: { length: 10 } },
-  { id: "MAExp@tv-basicstudies", inputs: { length: 20 } },
-  { id: "MAExp@tv-basicstudies", inputs: { length: 50 } },
-  { id: "MAExp@tv-basicstudies", inputs: { length: 100 } },
-  { id: "MAExp@tv-basicstudies", inputs: { length: 200 } },
-];
+// Indicadores por defecto: MACD + una Media Móvil Exponencial.
+// Nota: el widget gratuito de TradingView no permite varias instancias del
+// mismo indicador con longitudes distintas vía configuración (eso requiere
+// la Charting Library de pago) - por eso usamos solo una MME configurable.
+const ESTUDIOS_MME = ["MACD@tv-basicstudies", "MAExp@tv-basicstudies"];
+const LONGITUD_MME_DEFECTO = 50;
 
 // Opciones comunes de TradingView para tener SIEMPRE el gráfico completo
 // (herramientas de dibujo, rangos de fecha, detalles, etc.) en las 3 pestañas.
@@ -36,6 +32,9 @@ function opcionesGraficoCompleto(symbol, interval, containerId, studies) {
     "calendar": false,
     "save_image": true,
     "studies": studies || [],
+    "studies_overrides": {
+      "moving average exponential.length": LONGITUD_MME_DEFECTO
+    },
     "container_id": containerId
   };
 }
