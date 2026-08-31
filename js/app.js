@@ -376,6 +376,12 @@ async function obtenerCotizaciones(tickersArray) {
     if (res.ok) {
       const quotes = await res.json();
       quotes.forEach(q => { cotizaciones[q.symbol] = q; });
+      if (quotes.length === 0) {
+        console.warn('obtenerCotizaciones: la función respondió OK pero sin datos para', tickers);
+      }
+    } else {
+      const detalle = await res.json().catch(() => ({}));
+      console.error(`obtenerCotizaciones: la función respondió ${res.status}`, detalle);
     }
   } catch (error) {
     console.error('Error al obtener cotizaciones:', error);
@@ -688,12 +694,12 @@ async function cargarListaSeguimiento() {
   const tbody = document.getElementById('tbl-seguimiento-body');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#787b86;">Cargando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#787b86;">Cargando...</td></tr>';
 
   const items = await DB.getWatchlist();
 
   if (items.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#787b86;">Aún no sigues ningún activo. Añádelo desde el Scanner o escribe un ticker arriba.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#787b86;">Aún no sigues ningún activo. Añádelo desde el Scanner o escribe un ticker arriba.</td></tr>';
     return;
   }
 
@@ -706,9 +712,6 @@ async function cargarListaSeguimiento() {
   items.forEach((item, index) => {
     const cot = cotizaciones[item.ticker] || {};
     const price = cot.regularMarketPrice || 0;
-    const change = cot.regularMarketChangePercent || 0;
-    const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
-    const signo = change >= 0 ? '+' : '';
 
     const entrada = item.precio_entrada;
     let distTexto = '—';
@@ -732,7 +735,6 @@ async function cargarListaSeguimiento() {
       </td>
       <td><b>${item.ticker}</b></td>
       <td>$${price.toFixed(2)}</td>
-      <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
       <td>
         <input type="number" step="0.01" value="${entrada ?? ''}" placeholder="—"
           style="width:60px; background:#2a2e39; color:#fff; border:1px solid #363c4e; border-radius:3px; padding:2px 4px; font-size:11px;"
