@@ -70,7 +70,7 @@ const DB = {
         try {
             const { data, error } = await supabaseClient
                 .from('watchlist')
-                .select('ticker, favorito, created_at')
+                .select('ticker, favorito, precio_entrada, created_at')
                 .order('favorito', { ascending: false })
                 .order('created_at', { ascending: false });
 
@@ -94,6 +94,22 @@ const DB = {
             return true;
         } catch (error) {
             console.error('Error al actualizar favorito:', error.message);
+            return false;
+        }
+    },
+
+    // Guardar el precio de entrada objetivo que quieres vigilar para un ticker
+    async setPrecioEntrada(ticker, precio) {
+        try {
+            const { error } = await supabaseClient
+                .from('watchlist')
+                .update({ precio_entrada: precio })
+                .eq('ticker', ticker);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('Error al guardar el precio de entrada:', error.message);
             return false;
         }
     },
