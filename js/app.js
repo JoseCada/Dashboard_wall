@@ -2,6 +2,17 @@ let activoSeleccionado = "NVDA";
 let timeframeSeleccionado = "D";
 let datosActualesMercado = [];
 
+// Conjunto de indicadores por defecto: MACD + Medias Móviles Exponenciales
+// de 10, 20, 50, 100 y 200 periodos.
+const ESTUDIOS_MME = [
+  "MACD@tv-basicstudies",
+  { id: "MAExp@tv-basicstudies", inputs: { length: 10 } },
+  { id: "MAExp@tv-basicstudies", inputs: { length: 20 } },
+  { id: "MAExp@tv-basicstudies", inputs: { length: 50 } },
+  { id: "MAExp@tv-basicstudies", inputs: { length: 100 } },
+  { id: "MAExp@tv-basicstudies", inputs: { length: 200 } },
+];
+
 // Opciones comunes de TradingView para tener SIEMPRE el gráfico completo
 // (herramientas de dibujo, rangos de fecha, detalles, etc.) en las 3 pestañas.
 function opcionesGraficoCompleto(symbol, interval, containerId, studies) {
@@ -56,7 +67,7 @@ async function cargarListaMercadoReal() {
   if (!selElement || !tbody) return;
 
   const tipoScreener = selElement.value;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
@@ -76,7 +87,7 @@ async function cargarListaMercadoReal() {
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
   }
 }
 
@@ -93,7 +104,7 @@ function renderizarFilasActivos(quotes) {
     const msg = soloBroker
       ? 'Ninguno de estos activos está marcado como de tu broker todavía'
       : 'Sin datos disponibles';
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
     return;
   }
 
@@ -116,7 +127,6 @@ function renderizarFilasActivos(quotes) {
         </button>
       </td>
       <td><b>${symbol}</b></td>
-      <td style="color:#787b86; font-size:11px;">${item.name || ''}</td>
       <td>$${price.toFixed(2)}</td>
       <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
     `;
@@ -162,7 +172,7 @@ function renderGraficoTV(symbol, interval) {
 
   if (typeof TradingView !== 'undefined') {
     new TradingView.widget(
-      opcionesGraficoCompleto(symbol, interval, 'tv_chart_container', ["MACD@tv-basicstudies", "RSI@tv-basicstudies"])
+      opcionesGraficoCompleto(symbol, interval, 'tv_chart_container', ESTUDIOS_MME)
     );
   }
 }
@@ -250,7 +260,7 @@ async function buscarEnUniverso(query) {
     return;
   }
 
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
 
   const universo = await obtenerUniverso();
   const soloBroker = document.getElementById('chk-solo-broker')?.checked;
@@ -271,7 +281,7 @@ async function buscarEnUniverso(query) {
     const msg = soloBroker
       ? 'Sin resultados marcados como tu broker para esta búsqueda'
       : 'Sin resultados';
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
     return;
   }
 
@@ -285,8 +295,7 @@ async function buscarEnUniverso(query) {
         </button>
       </td>
       <td><b>${item.symbol}</b></td>
-      <td style="color:#787b86; font-size:11px;">${item.name}</td>
-      <td colspan="2" style="color:#787b86;">Ver gráfico →</td>
+      <td colspan="2" style="color:#787b86;">${item.name} — Ver gráfico →</td>
     `;
     tr.onclick = () => seleccionarActivoUniverso(item, tr);
     tbody.appendChild(tr);
@@ -785,7 +794,7 @@ function renderGraficoSeguimiento(symbol) {
 
   if (typeof TradingView !== 'undefined') {
     new TradingView.widget(
-      opcionesGraficoCompleto(symbol, 'D', 'tv_chart_seguimiento', ["MACD@tv-basicstudies", "RSI@tv-basicstudies"])
+      opcionesGraficoCompleto(symbol, 'D', 'tv_chart_seguimiento', ESTUDIOS_MME)
     );
   }
 }
