@@ -15,6 +15,53 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const DB = {
 
     // ------------------------------------------------------------------------
+    // TICKERS DE TU BROKER (Revolut) - para marcar qué activos puedes operar
+    // ------------------------------------------------------------------------
+
+    async getBrokerTickers() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('broker_tickers')
+                .select('ticker');
+
+            if (error) throw error;
+            return data ? data.map(row => row.ticker) : [];
+        } catch (error) {
+            console.error('Error al obtener los tickers del broker:', error.message);
+            return [];
+        }
+    },
+
+    async addBrokerTicker(ticker) {
+        try {
+            const { error } = await supabaseClient
+                .from('broker_tickers')
+                .insert([{ ticker: ticker.toUpperCase() }]);
+
+            if (error && error.code !== '23505') throw error; // 23505 = ya existía, se ignora
+            return true;
+        } catch (error) {
+            console.error('Error al añadir el ticker del broker:', error.message);
+            throw error;
+        }
+    },
+
+    async removeBrokerTicker(ticker) {
+        try {
+            const { error } = await supabaseClient
+                .from('broker_tickers')
+                .delete()
+                .eq('ticker', ticker.toUpperCase());
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('Error al eliminar el ticker del broker:', error.message);
+            return false;
+        }
+    },
+
+    // ------------------------------------------------------------------------
     // PESTAÑA 1 Y 2: LISTA DE SEGUIMIENTO (WATCHLIST)
     // ------------------------------------------------------------------------
     

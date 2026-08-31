@@ -6,9 +6,13 @@
       <button onclick="cargarListaMercadoReal()" style="background:none; border:none; color:#787b86; cursor:pointer;" title="Recargar mercado">🔄</button>
     </div>
 
-    <div style="display:flex; gap:6px;">
+    <div style="display:flex; gap:6px; align-items:center;">
       <input type="text" id="inp-buscar-universo" placeholder="🔍 Buscar cualquier ticker o empresa (NASDAQ/NYSE)..." style="flex:1; background:#2a2e39; color:#fff; border:1px solid #363c4e; padding:6px; border-radius:4px; font-size:12px;" oninput="buscarEnUniverso(this.value)">
     </div>
+
+    <label style="font-size:11px; color:#787b86; display:flex; align-items:center; gap:4px; cursor:pointer;">
+      <input type="checkbox" id="chk-solo-broker" onchange="onCambioFiltroBroker()"> Mostrar solo mi broker (Revolut)
+    </label>
 
     <div class="selectors-row">
       <select id="sel-screener" onchange="cargarListaMercadoReal()">
@@ -26,6 +30,7 @@
       <table class="mini-table">
         <thead>
           <tr>
+            <th></th>
             <th>Ticker</th>
             <th>Nombre</th>
             <th>Precio</th>
@@ -33,7 +38,7 @@
           </tr>
         </thead>
         <tbody id="tbl-activos-body">
-          <tr><td colspan="4" style="text-align:center; color:#787b86;">Cargando datos en vivo...</td></tr>
+          <tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando datos en vivo...</td></tr>
         </tbody>
       </table>
     </div>

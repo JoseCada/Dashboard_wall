@@ -41,6 +41,7 @@ async function cargarPestanaScanner() {
     const html = await response.text();
     container.innerHTML = html;
 
+    await cargarTickersBroker();
     cargarListaMercadoReal();
   } catch (error) {
     console.error('Error cargando la pestaña:', error);
@@ -55,7 +56,7 @@ async function cargarListaMercadoReal() {
   if (!selElement || !tbody) return;
 
   const tipoScreener = selElement.value;
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
@@ -71,42 +72,61 @@ async function cargarListaMercadoReal() {
     const quotes = await res.json();
     datosActualesMercado = quotes;
 
-    tbody.innerHTML = '';
-
-    if (quotes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Sin datos disponibles</td></tr>';
-      return;
-    }
-
-    quotes.forEach((item, index) => {
-      const symbol = item.symbol;
-      const price = item.regularMarketPrice || 0;
-      const change = item.regularMarketChangePercent || 0;
-
-      const tr = document.createElement('tr');
-      if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
-
-      const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
-      const signo = change >= 0 ? '+' : '';
-
-      tr.innerHTML = `
-        <td><b>${symbol}</b></td>
-        <td style="color:#787b86; font-size:11px;">${item.name || ''}</td>
-        <td>$${price.toFixed(2)}</td>
-        <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
-      `;
-
-      tr.onclick = () => seleccionarFilaActivo(item, tr);
-      tbody.appendChild(tr);
-    });
-
-    if (quotes.length > 0) {
-      seleccionarFilaActivo(quotes[0]);
-    }
+    renderizarFilasActivos(quotes);
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+  }
+}
+
+function renderizarFilasActivos(quotes) {
+  const tbody = document.getElementById('tbl-activos-body');
+  if (!tbody) return;
+
+  const soloBroker = document.getElementById('chk-solo-broker')?.checked;
+  const lista = soloBroker ? quotes.filter(q => tickersBrokerSet.has(q.symbol.toUpperCase())) : quotes;
+
+  tbody.innerHTML = '';
+
+  if (lista.length === 0) {
+    const msg = soloBroker
+      ? 'Ninguno de estos activos está marcado como de tu broker todavía'
+      : 'Sin datos disponibles';
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+    return;
+  }
+
+  lista.forEach((item, index) => {
+    const symbol = item.symbol;
+    const price = item.regularMarketPrice || 0;
+    const change = item.regularMarketChangePercent || 0;
+    const enBroker = tickersBrokerSet.has(symbol.toUpperCase());
+
+    const tr = document.createElement('tr');
+    if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
+
+    const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
+    const signo = change >= 0 ? '+' : '';
+
+    tr.innerHTML = `
+      <td>
+        <button class="star-btn" title="${enBroker ? 'Quitar de mi broker' : 'Marcar como disponible en mi broker'}" onclick="event.stopPropagation(); toggleBrokerTicker('${symbol}')">
+          ${enBroker ? '✅' : '➕'}
+        </button>
+      </td>
+      <td><b>${symbol}</b></td>
+      <td style="color:#787b86; font-size:11px;">${item.name || ''}</td>
+      <td>$${price.toFixed(2)}</td>
+      <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
+    `;
+
+    tr.onclick = () => seleccionarFilaActivo(item, tr);
+    tbody.appendChild(tr);
+  });
+
+  if (!soloBroker && quotes.length > 0) {
+    seleccionarFilaActivo(quotes[0]);
   }
 }
 
@@ -152,6 +172,47 @@ function cambiarTimeframe(tf) {
   renderGraficoTV(activoSeleccionado, timeframeSeleccionado);
 }
 
+// TICKERS DE TU BROKER (Revolut) - marcado manual, sin API pública disponible
+let tickersBrokerSet = new Set();
+
+async function cargarTickersBroker() {
+  const lista = await DB.getBrokerTickers();
+  tickersBrokerSet = new Set(lista.map(t => t.toUpperCase()));
+}
+
+async function toggleBrokerTicker(ticker) {
+  const t = ticker.toUpperCase();
+  try {
+    if (tickersBrokerSet.has(t)) {
+      await DB.removeBrokerTicker(t);
+      tickersBrokerSet.delete(t);
+    } else {
+      await DB.addBrokerTicker(t);
+      tickersBrokerSet.add(t);
+    }
+  } catch (error) {
+    alert('❌ No se pudo actualizar el marcado del broker.');
+    return;
+  }
+
+  // Redibuja la vista actual (búsqueda o listado normal) con el estado nuevo
+  const textoBusqueda = document.getElementById('inp-buscar-universo')?.value || '';
+  if (textoBusqueda.trim()) {
+    buscarEnUniverso(textoBusqueda);
+  } else if (datosActualesMercado.length > 0) {
+    renderizarFilasActivos(datosActualesMercado);
+  }
+}
+
+function onCambioFiltroBroker() {
+  const textoBusqueda = document.getElementById('inp-buscar-universo')?.value || '';
+  if (textoBusqueda.trim()) {
+    buscarEnUniverso(textoBusqueda);
+  } else {
+    renderizarFilasActivos(datosActualesMercado);
+  }
+}
+
 // UNIVERSO COMPLETO (NASDAQ + NYSE/NYSE American/ARCA) para buscar
 // cualquier ticker, no solo los que salen en gainers/losers/actives.
 let universoCompleto = null; // se carga una vez y se cachea en memoria
@@ -189,23 +250,40 @@ async function buscarEnUniverso(query) {
     return;
   }
 
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
 
   const universo = await obtenerUniverso();
-  const coincidencias = universo
-    .filter(it => it.symbol.toLowerCase().includes(texto) || it.name.toLowerCase().includes(texto))
-    .slice(0, 50);
+  const soloBroker = document.getElementById('chk-solo-broker')?.checked;
+
+  let coincidencias = universo.filter(it =>
+    it.symbol.toLowerCase().includes(texto) || it.name.toLowerCase().includes(texto)
+  );
+
+  if (soloBroker) {
+    coincidencias = coincidencias.filter(it => tickersBrokerSet.has(it.symbol.toUpperCase()));
+  }
+
+  coincidencias = coincidencias.slice(0, 50);
 
   tbody.innerHTML = '';
 
   if (coincidencias.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Sin resultados</td></tr>';
+    const msg = soloBroker
+      ? 'Sin resultados marcados como tu broker para esta búsqueda'
+      : 'Sin resultados';
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
     return;
   }
 
   coincidencias.forEach(item => {
+    const enBroker = tickersBrokerSet.has(item.symbol.toUpperCase());
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td>
+        <button class="star-btn" title="${enBroker ? 'Quitar de mi broker' : 'Marcar como disponible en mi broker'}" onclick="event.stopPropagation(); toggleBrokerTicker('${item.symbol}')">
+          ${enBroker ? '✅' : '➕'}
+        </button>
+      </td>
       <td><b>${item.symbol}</b></td>
       <td style="color:#787b86; font-size:11px;">${item.name}</td>
       <td colspan="2" style="color:#787b86;">Ver gráfico →</td>
