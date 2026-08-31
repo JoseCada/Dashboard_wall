@@ -694,12 +694,12 @@ async function cargarListaSeguimiento() {
   const tbody = document.getElementById('tbl-seguimiento-body');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#787b86;">Cargando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando...</td></tr>';
 
   const items = await DB.getWatchlist();
 
   if (items.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#787b86;">Aún no sigues ningún activo. Añádelo desde el Scanner o escribe un ticker arriba.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Aún no sigues ningún activo. Añádelo desde el Scanner o escribe un ticker arriba.</td></tr>';
     return;
   }
 
@@ -712,15 +712,7 @@ async function cargarListaSeguimiento() {
   items.forEach((item, index) => {
     const cot = cotizaciones[item.ticker] || {};
     const price = cot.regularMarketPrice || 0;
-
     const entrada = item.precio_entrada;
-    let distTexto = '—';
-    let distClase = '';
-    if (entrada && price > 0) {
-      const dist = ((price - entrada) / entrada) * 100;
-      distClase = dist >= 0 ? 'text-pos' : 'text-neg';
-      distTexto = `${dist >= 0 ? '+' : ''}${dist.toFixed(1)}%`;
-    }
 
     const tr = document.createElement('tr');
     if (item.ticker === activoSeguimientoSeleccionado || (index === 0 && !activoSeguimientoSeleccionado)) {
@@ -737,11 +729,10 @@ async function cargarListaSeguimiento() {
       <td>$${price.toFixed(2)}</td>
       <td>
         <input type="number" step="0.01" value="${entrada ?? ''}" placeholder="—"
-          style="width:60px; background:#2a2e39; color:#fff; border:1px solid #363c4e; border-radius:3px; padding:2px 4px; font-size:11px;"
+          style="width:70px; background:#2a2e39; color:#fff; border:1px solid #363c4e; border-radius:3px; padding:2px 4px; font-size:11px;"
           onclick="event.stopPropagation();"
           onchange="guardarPrecioEntrada('${item.ticker}', this.value)">
       </td>
-      <td class="${distClase}">${distTexto}</td>
       <td><button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;" onclick="event.stopPropagation(); eliminarDeSeguimiento('${item.ticker}')">Eliminar</button></td>
     `;
 
