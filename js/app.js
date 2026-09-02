@@ -105,7 +105,9 @@ async function cargarListaMercadoReal() {
     }
 
     const quotes = await res.json();
-    const quotesConBroker = await sumarTickersBrokerFaltantes(quotes);
+    const quotesConBroker = tipoScreener === 'most_actives'
+      ? quotes
+      : await sumarTickersBrokerFaltantes(quotes);
     datosActualesMercado = quotesConBroker;
 
     renderizarFilasActivos(datosActualesMercado);
