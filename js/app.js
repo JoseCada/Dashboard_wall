@@ -60,6 +60,31 @@ async function cargarPestanaScanner() {
 }
 
 // 2. OBTENCIÓN DE DATOS EN TIEMPO REAL (vía Edge Function de Supabase -> FMP)
+// Suma al listado los tickers de tu broker que no salgan en el top de FMP,
+// usando el precio cacheado por el scraping diario de Google Finance.
+async function sumarTickersBrokerFaltantes(quotesFmp) {
+  if (tickersBrokerSet.size === 0) return quotesFmp;
+
+  const yaPresentes = new Set(quotesFmp.map(q => q.symbol.toUpperCase()));
+  const faltantes = [...tickersBrokerSet].filter(t => !yaPresentes.has(t));
+  if (faltantes.length === 0) return quotesFmp;
+
+  const preciosGoogle = await DB.getGoogleFinancePrices();
+  const mapaPrecios = {};
+  preciosGoogle.forEach(p => { mapaPrecios[p.ticker.toUpperCase()] = p; });
+
+  const extras = faltantes
+    .filter(t => mapaPrecios[t])
+    .map(t => ({
+      symbol: t,
+      name: '',
+      regularMarketPrice: Number(mapaPrecios[t].precio) || 0,
+      regularMarketChangePercent: Number(mapaPrecios[t].cambio_pct) || 0,
+    }));
+
+  return [...quotesFmp, ...extras];
+}
+
 async function cargarListaMercadoReal() {
   const selElement = document.getElementById('sel-screener');
   const tbody = document.getElementById('tbl-activos-body');
@@ -80,9 +105,10 @@ async function cargarListaMercadoReal() {
     }
 
     const quotes = await res.json();
-    datosActualesMercado = quotes;
+    const quotesConBroker = await sumarTickersBrokerFaltantes(quotes);
+    datosActualesMercado = quotesConBroker;
 
-    renderizarFilasActivos(quotes);
+    renderizarFilasActivos(datosActualesMercado);
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);

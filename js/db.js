@@ -61,6 +61,21 @@ const DB = {
         }
     },
 
+    // Precios cacheados por el scraping diario de Google Finance
+    async getGoogleFinancePrices() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('google_finance_prices')
+                .select('ticker, precio, cambio_pct, actualizado_en');
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error al obtener precios de Google Finance:', error.message);
+            return [];
+        }
+    },
+
     // ------------------------------------------------------------------------
     // PESTAÑA 1 Y 2: LISTA DE SEGUIMIENTO (WATCHLIST)
     // ------------------------------------------------------------------------
