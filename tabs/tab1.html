@@ -32,8 +32,8 @@
           <tr>
             <th></th>
             <th>Ticker</th>
-            <th>Precio</th>
-            <th>Cambio</th>
+            <th style="cursor:pointer;" onclick="ordenarScanner('precio')">Precio <span id="orden-precio-icono"></span></th>
+            <th style="cursor:pointer;" onclick="ordenarScanner('cambio')">Cambio <span id="orden-cambio-icono"></span></th>
           </tr>
         </thead>
         <tbody id="tbl-activos-body">

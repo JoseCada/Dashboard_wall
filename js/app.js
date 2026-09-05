@@ -105,10 +105,7 @@ async function cargarListaMercadoReal() {
     }
 
     const quotes = await res.json();
-    const quotesConBroker = tipoScreener === 'most_actives'
-      ? quotes
-      : await sumarTickersBrokerFaltantes(quotes);
-    datosActualesMercado = quotesConBroker;
+    datosActualesMercado = quotes;
 
     renderizarFilasActivos(datosActualesMercado);
 
@@ -116,6 +113,28 @@ async function cargarListaMercadoReal() {
     console.error("Error al obtener mercado en tiempo real:", error);
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
   }
+}
+
+let ordenScanner = { columna: null, direccion: 'desc' };
+
+function ordenarScanner(columna) {
+  if (ordenScanner.columna === columna) {
+    ordenScanner.direccion = ordenScanner.direccion === 'desc' ? 'asc' : 'desc';
+  } else {
+    ordenScanner.columna = columna;
+    ordenScanner.direccion = 'desc';
+  }
+
+  const campo = columna === 'precio' ? 'regularMarketPrice' : 'regularMarketChangePercent';
+  const factor = ordenScanner.direccion === 'desc' ? -1 : 1;
+  datosActualesMercado = [...datosActualesMercado].sort((a, b) => factor * ((a[campo] || 0) - (b[campo] || 0)));
+
+  const iconoPrecio = document.getElementById('orden-precio-icono');
+  const iconoCambio = document.getElementById('orden-cambio-icono');
+  if (iconoPrecio) iconoPrecio.innerText = columna === 'precio' ? (ordenScanner.direccion === 'desc' ? '▼' : '▲') : '';
+  if (iconoCambio) iconoCambio.innerText = columna === 'cambio' ? (ordenScanner.direccion === 'desc' ? '▼' : '▲') : '';
+
+  renderizarFilasActivos(datosActualesMercado);
 }
 
 function renderizarFilasActivos(quotes) {
@@ -579,7 +598,22 @@ async function renderizarPortafolio() {
     return;
   }
 
+  const abiertas = portafolio.filter(p => p.estado !== 'CERRADA');
+  const cerradas = portafolio.filter(p => p.estado === 'CERRADA');
+  const totalInvertido = abiertas.reduce((s, p) => s + (Number(p.entry) * Number(p.cantidad)), 0);
+  const pnlRealizado = cerradas.reduce((s, p) => {
+    const factor = p.tipo === 'Short' ? -1 : 1;
+    return s + (Number(p.close_price) - Number(p.entry)) * Number(p.cantidad) * factor;
+  }, 0);
+
   html += `
+      <div class="metrics-bar" style="flex:0 0 auto;">
+        <div class="m-item"><span class="lbl">CAPITAL INVERTIDO (ABIERTAS)</span><span class="val">$${totalInvertido.toFixed(2)}</span></div>
+        <div class="m-item"><span class="lbl">P&amp;L REALIZADO (CERRADAS)</span><span class="val ${pnlRealizado >= 0 ? 'text-pos' : 'text-neg'}">${pnlRealizado >= 0 ? '+' : ''}$${pnlRealizado.toFixed(2)}</span></div>
+        <div class="m-item"><span class="lbl">OPERACIONES ABIERTAS</span><span class="val">${abiertas.length}</span></div>
+        <div class="m-item"><span class="lbl">OPERACIONES CERRADAS</span><span class="val">${cerradas.length}</span></div>
+      </div>
+
       <div class="side-card" style="flex:0 1 auto; max-height:40%;">
         <div class="table-scroll">
           <table class="mini-table" style="min-width:900px;">
@@ -601,6 +635,9 @@ async function renderizarPortafolio() {
 
   portafolio.forEach(item => {
     const fecha = item.created_at ? new Date(item.created_at).toLocaleDateString() : '-';
+    const botonCerrar = item.estado !== 'CERRADA'
+      ? `<button class="btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="event.stopPropagation(); cerrarOperacionManual(${item.id}, ${item.entry}, '${item.tipo}')">Cerrar</button>`
+      : '';
     html += `
       <tr data-ticker="${item.ticker}" onclick="seleccionarOperacionPortafolio('${item.ticker}')">
         <td>${fecha}</td>
@@ -611,7 +648,10 @@ async function renderizarPortafolio() {
         <td class="text-neg">$${Number(item.sl).toFixed(2)}</td>
         <td class="text-pos">$${Number(item.tp).toFixed(2)}</td>
         <td>${estadoLabel(item)}</td>
-        <td><button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;" onclick="event.stopPropagation(); eliminarDelPortafolio(${item.id})">Eliminar</button></td>
+        <td style="display:flex; gap:4px;">
+          ${botonCerrar}
+          <button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px;" onclick="event.stopPropagation(); eliminarDelPortafolio(${item.id})">Eliminar</button>
+        </td>
       </tr>
     `;
   });
@@ -664,6 +704,29 @@ function renderGraficoPortafolio(symbol) {
 
 async function eliminarDelPortafolio(id) {
   await DB.deletePosition(id);
+  await renderizarPortafolio();
+}
+
+async function cerrarOperacionManual(id, entry, tipo) {
+  const precioStr = prompt('¿A qué precio cierras esta operación?');
+  if (precioStr === null) return;
+
+  const closePrice = parseFloat(precioStr.replace(',', '.'));
+  if (isNaN(closePrice) || closePrice <= 0) {
+    alert('Precio no válido.');
+    return;
+  }
+
+  const esLong = tipo !== 'Short';
+  const ganadora = esLong ? closePrice > entry : closePrice < entry;
+
+  await DB.updatePosition(id, {
+    estado: 'CERRADA',
+    resultado: ganadora ? 'GANADORA' : 'PERDEDORA',
+    close_price: closePrice,
+    closed_at: new Date().toISOString()
+  });
+
   await renderizarPortafolio();
 }
 
