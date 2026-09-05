@@ -232,6 +232,7 @@ const DB = {
                     tp: position.tp,
                     cantidad: position.cantidad || 1,
                     precio_creacion: position.precioCreacion || position.entry,
+                    tipo_cambio_entrada: position.tipoCambioEntrada || null,
                     estado: 'PENDIENTE'
                 }])
                 .select();

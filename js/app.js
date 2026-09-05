@@ -436,6 +436,29 @@ async function obtenerCotizaciones(tickersArray) {
   return cotizaciones;
 }
 
+// TIPO DE CAMBIO EUR/USD (Frankfurter - Banco Central Europeo, gratis y sin clave)
+const cacheTipoCambio = {};
+
+async function obtenerTipoCambioEURUSD(fechaISO) {
+  const fecha = (fechaISO || new Date().toISOString()).slice(0, 10);
+  if (cacheTipoCambio[fecha]) return cacheTipoCambio[fecha];
+
+  try {
+    const res = await fetch(`https://api.frankfurter.dev/v1/${fecha}?from=USD&to=EUR`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const rate = data?.rates?.EUR;
+    if (rate) {
+      cacheTipoCambio[fecha] = rate;
+      return rate;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error al obtener el tipo de cambio EUR/USD:', error);
+    return null;
+  }
+}
+
 // 6. PORTAFOLIO (SUPABASE) - accesible desde cualquier equipo
 let activoPortafolioSeleccionado = null;
 
@@ -446,6 +469,7 @@ async function guardarEnPortafolio() {
   }
 
   const cot = ultimasCotizacionesSeguimiento[activoSeguimientoSeleccionado] || {};
+  const tipoCambioEntrada = await obtenerTipoCambioEURUSD(new Date().toISOString());
 
   const posicion = {
     ticker: activoSeguimientoSeleccionado,
@@ -454,7 +478,8 @@ async function guardarEnPortafolio() {
     tp: parseFloat(document.getElementById('inp-tp')?.value) || 0,
     tipo: document.getElementById('op-tipo')?.value || "Long",
     cantidad: parseFloat(document.getElementById('inp-cantidad')?.value) || 1,
-    precioCreacion: cot.regularMarketPrice || parseFloat(document.getElementById('inp-pe')?.value) || 0
+    precioCreacion: cot.regularMarketPrice || parseFloat(document.getElementById('inp-pe')?.value) || 0,
+    tipoCambioEntrada
   };
 
   try {
@@ -486,8 +511,10 @@ async function agregarOperacionManual() {
     precioActual = cotizaciones[ticker].regularMarketPrice;
   }
 
+  const tipoCambioEntrada = await obtenerTipoCambioEURUSD(new Date().toISOString());
+
   try {
-    await DB.addPosition({ ticker, tipo, entry, sl, tp, cantidad, precioCreacion: precioActual });
+    await DB.addPosition({ ticker, tipo, entry, sl, tp, cantidad, precioCreacion: precioActual, tipoCambioEntrada });
     alert(`✅ Operación de ${ticker} añadida manualmente.`);
     await renderizarPortafolio();
   } catch (error) {
@@ -533,11 +560,14 @@ async function verificarEstadoOperaciones() {
     }
 
     if (nuevoEstado !== pos.estado) {
+      const fechaCierre = new Date().toISOString();
+      const tipoCambioCierre = nuevoEstado === 'CERRADA' ? await obtenerTipoCambioEURUSD(fechaCierre) : null;
       await DB.updatePosition(pos.id, {
         estado: nuevoEstado,
         resultado: nuevoResultado,
         close_price: closePrice,
-        closed_at: nuevoEstado === 'CERRADA' ? new Date().toISOString() : null
+        closed_at: nuevoEstado === 'CERRADA' ? fechaCierre : null,
+        tipo_cambio_cierre: tipoCambioCierre
       });
     }
   }
@@ -719,12 +749,15 @@ async function cerrarOperacionManual(id, entry, tipo) {
 
   const esLong = tipo !== 'Short';
   const ganadora = esLong ? closePrice > entry : closePrice < entry;
+  const fechaCierre = new Date().toISOString();
+  const tipoCambioCierre = await obtenerTipoCambioEURUSD(fechaCierre);
 
   await DB.updatePosition(id, {
     estado: 'CERRADA',
     resultado: ganadora ? 'GANADORA' : 'PERDEDORA',
     close_price: closePrice,
-    closed_at: new Date().toISOString()
+    closed_at: fechaCierre,
+    tipo_cambio_cierre: tipoCambioCierre
   });
 
   await renderizarPortafolio();
@@ -950,11 +983,20 @@ async function cargarInformeFiscal() {
     return new Date(p.closed_at).getFullYear() === anio;
   });
 
-  ultimoInformeFiscal = cerradas.map(p => {
+  ultimoInformeFiscal = [];
+  for (const p of cerradas) {
+    // Si falta el tipo de cambio guardado (operaciones antiguas o algún
+    // fallo puntual al consultarlo), lo buscamos ahora mismo para esa fecha.
+    const tcEntrada = p.tipo_cambio_entrada || await obtenerTipoCambioEURUSD(p.created_at);
+    const tcCierre = p.tipo_cambio_cierre || await obtenerTipoCambioEURUSD(p.closed_at);
+
     const factor = p.tipo === 'Short' ? -1 : 1;
-    const importe = (Number(p.close_price) - Number(p.entry)) * Number(p.cantidad) * factor;
-    return { ...p, importe };
-  });
+    const entryEur = Number(p.entry) * (tcEntrada || 1);
+    const closeEur = Number(p.close_price) * (tcCierre || 1);
+    const importe = (closeEur - entryEur) * Number(p.cantidad) * factor;
+
+    ultimoInformeFiscal.push({ ...p, importe, sinTipoCambio: !tcEntrada || !tcCierre });
+  }
 
   tbody.innerHTML = '';
 
@@ -973,7 +1015,7 @@ async function cargarInformeFiscal() {
           <td>$${Number(op.entry).toFixed(2)}</td>
           <td>$${Number(op.close_price).toFixed(2)}</td>
           <td>${op.resultado === 'GANADORA' ? '✅ Ganadora' : '❌ Perdedora'}</td>
-          <td class="${colorClase}">${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} €</td>
+          <td class="${colorClase}">${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} €${op.sinTipoCambio ? ' ⚠️' : ''}</td>
         </tr>
       `;
     });
@@ -1034,7 +1076,7 @@ function descargarPDFFiscal() {
       `$${Number(op.entry).toFixed(2)}`,
       `$${Number(op.close_price).toFixed(2)}`,
       op.resultado === 'GANADORA' ? 'Ganadora' : 'Perdedora',
-      `${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} €`
+      `${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} €${op.sinTipoCambio ? ' (!)' : ''}`
     ]),
     styles: { fontSize: 8 },
     headStyles: { fillColor: [41, 98, 255] }
