@@ -1001,7 +1001,7 @@ async function cargarInformeFiscal() {
   tbody.innerHTML = '';
 
   if (ultimoInformeFiscal.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#787b86;">No hay operaciones cerradas en este año.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#787b86;">No hay operaciones cerradas en este año.</td></tr>';
   } else {
     ultimoInformeFiscal.forEach(op => {
       const fechaCierre = op.closed_at ? new Date(op.closed_at).toLocaleDateString() : '-';
@@ -1016,6 +1016,10 @@ async function cargarInformeFiscal() {
           <td>$${Number(op.close_price).toFixed(2)}</td>
           <td>${op.resultado === 'GANADORA' ? '✅ Ganadora' : '❌ Perdedora'}</td>
           <td class="${colorClase}">${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} €${op.sinTipoCambio ? ' ⚠️' : ''}</td>
+          <td style="display:flex; gap:4px;">
+            <button class="btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="editarOperacionFiscal(${op.id})">Editar</button>
+            <button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px;" onclick="eliminarOperacionFiscal(${op.id})">Eliminar</button>
+          </td>
         </tr>
       `;
     });
@@ -1031,6 +1035,49 @@ async function cargarInformeFiscal() {
   netoEl.innerText = `${neto.toFixed(2)} €`;
   netoEl.className = `val ${neto >= 0 ? 'text-pos' : 'text-neg'}`;
   document.getElementById('fis-num').innerText = ultimoInformeFiscal.length;
+}
+
+async function editarOperacionFiscal(id) {
+  const op = ultimoInformeFiscal.find(o => o.id === id);
+  if (!op) return;
+
+  const nuevoEntry = prompt('Precio de entrada (USD):', op.entry);
+  if (nuevoEntry === null) return;
+  const nuevoClose = prompt('Precio de cierre (USD):', op.close_price);
+  if (nuevoClose === null) return;
+  const nuevaCantidad = prompt('Cantidad:', op.cantidad);
+  if (nuevaCantidad === null) return;
+  const nuevoTipo = prompt('Tipo (Long/Short):', op.tipo);
+  if (nuevoTipo === null) return;
+
+  const entry = parseFloat(String(nuevoEntry).replace(',', '.'));
+  const closePrice = parseFloat(String(nuevoClose).replace(',', '.'));
+  const cantidad = parseFloat(String(nuevaCantidad).replace(',', '.'));
+  const tipo = nuevoTipo.trim().toLowerCase().startsWith('s') ? 'Short' : 'Long';
+
+  if (isNaN(entry) || isNaN(closePrice) || isNaN(cantidad)) {
+    alert('Algún valor no es un número válido. No se ha guardado nada.');
+    return;
+  }
+
+  const esLong = tipo !== 'Short';
+  const ganadora = esLong ? closePrice > entry : closePrice < entry;
+
+  await DB.updatePosition(id, {
+    entry,
+    close_price: closePrice,
+    cantidad,
+    tipo,
+    resultado: ganadora ? 'GANADORA' : 'PERDEDORA'
+  });
+
+  await cargarInformeFiscal();
+}
+
+async function eliminarOperacionFiscal(id) {
+  if (!confirm('¿Seguro que quieres eliminar esta operación del historial? No se puede deshacer.')) return;
+  await DB.deletePosition(id);
+  await cargarInformeFiscal();
 }
 
 function descargarPDFFiscal() {
