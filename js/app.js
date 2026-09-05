@@ -995,7 +995,7 @@ async function cargarInformeFiscal() {
     const closeEur = Number(p.close_price) * (tcCierre || 1);
     const importe = (closeEur - entryEur) * Number(p.cantidad) * factor;
 
-    ultimoInformeFiscal.push({ ...p, importe, sinTipoCambio: !tcEntrada || !tcCierre });
+    ultimoInformeFiscal.push({ ...p, importe, entryEur, closeEur, sinTipoCambio: !tcEntrada || !tcCierre });
   }
 
   tbody.innerHTML = '';
@@ -1012,10 +1012,10 @@ async function cargarInformeFiscal() {
           <td><b>${op.ticker}</b></td>
           <td>${op.tipo}</td>
           <td>${op.cantidad}</td>
-          <td>$${Number(op.entry).toFixed(2)}</td>
-          <td>$${Number(op.close_price).toFixed(2)}</td>
+          <td>$${Number(op.entry).toFixed(2)} <span style="color:#787b86; font-size:10px;">(${op.entryEur.toFixed(2)} €)</span></td>
+          <td>$${Number(op.close_price).toFixed(2)} <span style="color:#787b86; font-size:10px;">(${op.closeEur.toFixed(2)} €)</span></td>
           <td>${op.resultado === 'GANADORA' ? '✅ Ganadora' : '❌ Perdedora'}</td>
-          <td class="${colorClase}">${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} €${op.sinTipoCambio ? ' ⚠️' : ''}</td>
+          <td class="${colorClase}">${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} € <span style="color:#787b86; font-size:10px;">($${((op.close_price - op.entry) * op.cantidad * (op.tipo === 'Short' ? -1 : 1)).toFixed(2)})</span>${op.sinTipoCambio ? ' ⚠️' : ''}</td>
           <td style="display:flex; gap:4px;">
             <button class="btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="editarOperacionFiscal(${op.id})">Editar</button>
             <button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px;" onclick="eliminarOperacionFiscal(${op.id})">Eliminar</button>
@@ -1120,8 +1120,8 @@ function descargarPDFFiscal() {
       op.ticker,
       op.tipo,
       op.cantidad,
-      `$${Number(op.entry).toFixed(2)}`,
-      `$${Number(op.close_price).toFixed(2)}`,
+      `$${Number(op.entry).toFixed(2)} (${op.entryEur.toFixed(2)}€)`,
+      `$${Number(op.close_price).toFixed(2)} (${op.closeEur.toFixed(2)}€)`,
       op.resultado === 'GANADORA' ? 'Ganadora' : 'Perdedora',
       `${op.importe >= 0 ? '+' : ''}${op.importe.toFixed(2)} €${op.sinTipoCambio ? ' (!)' : ''}`
     ]),
