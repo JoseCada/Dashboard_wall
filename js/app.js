@@ -91,7 +91,7 @@ async function cargarListaMercadoReal() {
   if (!selElement || !tbody) return;
 
   const tipoScreener = selElement.value;
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
@@ -111,8 +111,15 @@ async function cargarListaMercadoReal() {
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
   }
+}
+
+function formatearVolumen(v) {
+  if (!v) return '—';
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M';
+  if (v >= 1_000) return (v / 1_000).toFixed(0) + 'K';
+  return String(v);
 }
 
 let ordenScanner = { columna: null, direccion: 'desc' };
@@ -125,14 +132,17 @@ function ordenarScanner(columna) {
     ordenScanner.direccion = 'desc';
   }
 
-  const campo = columna === 'precio' ? 'regularMarketPrice' : 'regularMarketChangePercent';
+  const mapaCampos = { precio: 'regularMarketPrice', cambio: 'regularMarketChangePercent', volumen: 'volumen' };
+  const campo = mapaCampos[columna];
   const factor = ordenScanner.direccion === 'desc' ? -1 : 1;
   datosActualesMercado = [...datosActualesMercado].sort((a, b) => factor * ((a[campo] || 0) - (b[campo] || 0)));
 
   const iconoPrecio = document.getElementById('orden-precio-icono');
   const iconoCambio = document.getElementById('orden-cambio-icono');
+  const iconoVolumen = document.getElementById('orden-volumen-icono');
   if (iconoPrecio) iconoPrecio.innerText = columna === 'precio' ? (ordenScanner.direccion === 'desc' ? '▼' : '▲') : '';
   if (iconoCambio) iconoCambio.innerText = columna === 'cambio' ? (ordenScanner.direccion === 'desc' ? '▼' : '▲') : '';
+  if (iconoVolumen) iconoVolumen.innerText = columna === 'volumen' ? (ordenScanner.direccion === 'desc' ? '▼' : '▲') : '';
 
   renderizarFilasActivos(datosActualesMercado);
 }
@@ -150,7 +160,7 @@ function renderizarFilasActivos(quotes) {
     const msg = soloBroker
       ? 'Ninguno de estos activos está marcado como de tu broker todavía'
       : 'Sin datos disponibles';
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
     return;
   }
 
@@ -165,6 +175,7 @@ function renderizarFilasActivos(quotes) {
 
     const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
     const signo = change >= 0 ? '+' : '';
+    const volumenTexto = formatearVolumen(item.volumen);
 
     tr.innerHTML = `
       <td>
@@ -175,6 +186,7 @@ function renderizarFilasActivos(quotes) {
       <td><b>${symbol}</b></td>
       <td>$${price.toFixed(2)}</td>
       <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
+      <td style="color:#787b86;">${volumenTexto}</td>
     `;
 
     tr.onclick = () => seleccionarFilaActivo(item, tr);
@@ -306,7 +318,7 @@ async function buscarEnUniverso(query) {
     return;
   }
 
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
 
   const universo = await obtenerUniverso();
   const soloBroker = document.getElementById('chk-solo-broker')?.checked;
@@ -327,7 +339,7 @@ async function buscarEnUniverso(query) {
     const msg = soloBroker
       ? 'Sin resultados marcados como tu broker para esta búsqueda'
       : 'Sin resultados';
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
     return;
   }
 
@@ -341,7 +353,7 @@ async function buscarEnUniverso(query) {
         </button>
       </td>
       <td><b>${item.symbol}</b></td>
-      <td colspan="2" style="color:#787b86;">${item.name} — Ver gráfico →</td>
+      <td colspan="3" style="color:#787b86;">${item.name} — Ver gráfico →</td>
     `;
     tr.onclick = () => seleccionarActivoUniverso(item, tr);
     tbody.appendChild(tr);
