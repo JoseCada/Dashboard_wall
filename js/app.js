@@ -859,7 +859,7 @@ async function cargarListaSeguimiento() {
       </td>
       <td>
         <button class="star-btn" title="Abrir en TradingView" onclick="event.stopPropagation(); window.open('https://es.tradingview.com/chart/ZdAlHYYW/?symbol=' + '${item.ticker}', '_blank')">🔗</button>
-        <button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;" onclick="event.stopPropagation(); eliminarDeSeguimiento('${item.ticker}')">Eliminar</button>
+        <button class="star-btn" title="Eliminar" onclick="event.stopPropagation(); eliminarDeSeguimiento('${item.ticker}')">🗑️</button>
       </td>
     `;
 
