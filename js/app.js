@@ -857,7 +857,10 @@ async function cargarListaSeguimiento() {
           onclick="event.stopPropagation();"
           onchange="guardarPrecioEntrada('${item.ticker}', this.value)">
       </td>
-      <td><button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;" onclick="event.stopPropagation(); eliminarDeSeguimiento('${item.ticker}')">Eliminar</button></td>
+      <td>
+        <button class="star-btn" title="Abrir en TradingView" onclick="event.stopPropagation(); window.open('https://es.tradingview.com/chart/ZdAlHYYW/?symbol=' + '${item.ticker}', '_blank')">🔗</button>
+        <button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;" onclick="event.stopPropagation(); eliminarDeSeguimiento('${item.ticker}')">Eliminar</button>
+      </td>
     `;
 
     tr.onclick = () => seleccionarActivoSeguimiento(item.ticker, tr);
