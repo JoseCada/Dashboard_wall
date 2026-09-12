@@ -111,7 +111,7 @@ async function cargarListaMercadoReal() {
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--neg-red);">Error al conectar con el servidor</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--neg-red);">${error.message || 'Error al conectar con el servidor'}</td></tr>`;
   }
 }
 
