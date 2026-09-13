@@ -176,6 +176,8 @@ function renderizarFilasActivos(quotes) {
     const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
     const signo = change >= 0 ? '+' : '';
     const volumenTexto = formatearVolumen(item.volumen);
+    const rvol = item.volumenRelativo;
+    const rvolTexto = rvol ? ` <span style="${rvol >= 2 ? 'color:var(--pos-green); font-weight:bold;' : 'color:#787b86;'}">(${rvol.toFixed(1)}x)</span>` : '';
 
     tr.innerHTML = `
       <td>
@@ -186,7 +188,7 @@ function renderizarFilasActivos(quotes) {
       <td><b>${symbol}</b></td>
       <td>$${price.toFixed(2)}</td>
       <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
-      <td style="color:#787b86;">${volumenTexto}</td>
+      <td style="color:#787b86;">${volumenTexto}${rvolTexto}</td>
     `;
 
     tr.onclick = () => seleccionarFilaActivo(item, tr);
@@ -307,14 +309,26 @@ async function obtenerUniverso() {
   return universoCargando;
 }
 
-async function buscarEnUniverso(query) {
+let debounceBusquedaUniverso = null;
+
+function buscarEnUniverso(query) {
+  clearTimeout(debounceBusquedaUniverso);
+  debounceBusquedaUniverso = setTimeout(() => ejecutarBusquedaUniverso(query), 350);
+}
+
+async function ejecutarBusquedaUniverso(query) {
   const tbody = document.getElementById('tbl-activos-body');
   if (!tbody) return;
 
   const texto = query.trim().toLowerCase();
 
   if (!texto) {
-    cargarListaMercadoReal(); // campo vacío -> vuelve a ganadores/perdedores/activos
+    // Si ya teníamos el listado cargado, lo reutilizamos sin gastar cuota de FMP
+    if (datosActualesMercado.length > 0) {
+      renderizarFilasActivos(datosActualesMercado);
+    } else {
+      cargarListaMercadoReal();
+    }
     return;
   }
 
