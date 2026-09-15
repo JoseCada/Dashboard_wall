@@ -680,6 +680,7 @@ async function renderizarPortafolio() {
                 <th>Tipo</th>
                 <th>Cantidad</th>
                 <th>Entrada</th>
+                <th>Total Invertido</th>
                 <th>Stop Loss</th>
                 <th>Take Profit</th>
                 <th>Estado</th>
@@ -691,9 +692,16 @@ async function renderizarPortafolio() {
 
   portafolio.forEach(item => {
     const fecha = item.created_at ? new Date(item.created_at).toLocaleDateString() : '-';
+    const totalInvertidoFila = Number(item.entry) * Number(item.cantidad);
     const botonCerrar = item.estado !== 'CERRADA'
       ? `<button class="btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="event.stopPropagation(); cerrarOperacionManual(${item.id}, ${item.entry}, '${item.tipo}')">Cerrar</button>`
       : '';
+    const selectorEstado = item.estado === 'CERRADA'
+      ? estadoLabel(item)
+      : `<select onclick="event.stopPropagation();" onchange="event.stopPropagation(); cambiarEstadoManual(${item.id}, this.value)" style="background:#2a2e39; color:#fff; border:1px solid #363c4e; border-radius:3px; padding:2px 4px; font-size:11px;">
+          <option value="PENDIENTE" ${item.estado === 'PENDIENTE' ? 'selected' : ''}>🕓 Pendiente</option>
+          <option value="ACTIVA" ${item.estado === 'ACTIVA' ? 'selected' : ''}>🟢 Activa</option>
+        </select>`;
     html += `
       <tr data-ticker="${item.ticker}" onclick="seleccionarOperacionPortafolio('${item.ticker}')">
         <td>${fecha}</td>
@@ -701,9 +709,10 @@ async function renderizarPortafolio() {
         <td>${item.tipo}</td>
         <td>${item.cantidad}</td>
         <td>$${Number(item.entry).toFixed(2)}</td>
+        <td>$${totalInvertidoFila.toFixed(2)}</td>
         <td class="text-neg">$${Number(item.sl).toFixed(2)}</td>
         <td class="text-pos">$${Number(item.tp).toFixed(2)}</td>
-        <td>${estadoLabel(item)}</td>
+        <td>${selectorEstado}</td>
         <td style="display:flex; gap:4px;">
           ${botonCerrar}
           <button style="background:var(--neg-red); color:#fff; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px;" onclick="event.stopPropagation(); eliminarDelPortafolio(${item.id})">Eliminar</button>
@@ -756,6 +765,11 @@ function renderGraficoPortafolio(symbol) {
       opcionesGraficoCompleto(symbol, 'D', 'tv_chart_portafolio')
     );
   }
+}
+
+async function cambiarEstadoManual(id, nuevoEstado) {
+  await DB.updatePosition(id, { estado: nuevoEstado });
+  await renderizarPortafolio();
 }
 
 async function eliminarDelPortafolio(id) {
