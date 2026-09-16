@@ -76,6 +76,23 @@ const DB = {
         }
     },
 
+    // Divergencias MACD detectadas por el escaneo diario
+    async getDivergencias() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('macd_divergences')
+                .select('ticker, tipo, precio, detectado_en')
+                .not('tipo', 'is', null)
+                .order('detectado_en', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error al obtener las divergencias MACD:', error.message);
+            return [];
+        }
+    },
+
     // ------------------------------------------------------------------------
     // PESTAÑA 1 Y 2: LISTA DE SEGUIMIENTO (WATCHLIST)
     // ------------------------------------------------------------------------

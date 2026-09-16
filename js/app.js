@@ -407,6 +407,8 @@ function cambiarPestana(tabId, btn) {
     renderizarPortafolio();
   } else if (tabId === 'tab-fiscal') {
     cargarPestanaFiscal();
+  } else if (tabId === 'tab-divergencias') {
+    cargarPestanaDivergencias();
   }
 }
 
@@ -1220,6 +1222,58 @@ async function cerrarSesion() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-email').value = '';
   document.getElementById('login-password').value = '';
+}
+
+// 9. DIVERGENCIAS MACD (calculadas a diario por el cron)
+let divergenciasTabCargada = false;
+
+async function cargarPestanaDivergencias() {
+  const container = document.getElementById('tab-divergencias');
+  if (!container) return;
+
+  if (!divergenciasTabCargada) {
+    try {
+      const response = await fetch('tabs/tab4.html');
+      if (!response.ok) throw new Error('No se pudo cargar tabs/tab4.html');
+      container.innerHTML = await response.text();
+      divergenciasTabCargada = true;
+    } catch (error) {
+      console.error('Error cargando la pestaña de divergencias:', error);
+      container.innerHTML = '<p style="color:var(--neg-red); padding:20px;">Error al cargar tabs/tab4.html. Revisa la ruta.</p>';
+      return;
+    }
+  }
+
+  await cargarDivergencias();
+}
+
+async function cargarDivergencias() {
+  const tbody = document.getElementById('tbl-divergencias-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando...</td></tr>';
+
+  const divergencias = await DB.getDivergencias();
+
+  if (divergencias.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">No hay divergencias detectadas todavía. Se calculan una vez al día.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  divergencias.forEach(d => {
+    const esAlcista = d.tipo === 'ALCISTA';
+    const fecha = d.detectado_en ? new Date(d.detectado_en).toLocaleDateString() : '-';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${d.ticker}</b></td>
+      <td class="${esAlcista ? 'text-pos' : 'text-neg'}">${esAlcista ? '📈 Alcista' : '📉 Bajista'}</td>
+      <td>$${Number(d.precio).toFixed(2)}</td>
+      <td>${fecha}</td>
+      <td><button class="star-btn" title="Abrir en TradingView" onclick="window.open('https://es.tradingview.com/chart/ZdAlHYYW/?symbol=' + '${d.ticker}', '_blank')">🔗</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 // INICIALIZACIÓN
