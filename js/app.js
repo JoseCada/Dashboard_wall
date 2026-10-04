@@ -91,7 +91,7 @@ async function cargarListaMercadoReal() {
   if (!selElement || !tbody) return;
 
   const tipoScreener = selElement.value;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
@@ -111,8 +111,18 @@ async function cargarListaMercadoReal() {
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--neg-red);">${error.message || 'Error al conectar con el servidor'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--neg-red);">${error.message || 'Error al conectar con el servidor'}</td></tr>`;
   }
+}
+
+function formatearDivergencia(macd, rsi) {
+  if (!macd && !rsi) return '<span style="color:#787b86;">—</span>';
+  const partes = [];
+  if (macd === 'ALCISTA') partes.push('<span class="text-pos" title="Divergencia alcista en MACD">🔼MACD</span>');
+  if (macd === 'BAJISTA') partes.push('<span class="text-neg" title="Divergencia bajista en MACD">🔽MACD</span>');
+  if (rsi === 'ALCISTA') partes.push('<span class="text-pos" title="Divergencia alcista en RSI">🔼RSI</span>');
+  if (rsi === 'BAJISTA') partes.push('<span class="text-neg" title="Divergencia bajista en RSI">🔽RSI</span>');
+  return partes.join(' ');
 }
 
 function formatearVolumen(v) {
@@ -160,7 +170,7 @@ function renderizarFilasActivos(quotes) {
     const msg = soloBroker
       ? 'Ninguno de estos activos está marcado como de tu broker todavía'
       : 'Sin datos disponibles';
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
     return;
   }
 
@@ -178,6 +188,7 @@ function renderizarFilasActivos(quotes) {
     const volumenTexto = formatearVolumen(item.volumen);
     const rvol = item.volumenRelativo;
     const rvolTexto = rvol ? ` <span style="${rvol >= 2 ? 'color:var(--pos-green); font-weight:bold;' : 'color:#787b86;'}">(${rvol.toFixed(1)}x)</span>` : '';
+    const divergenciaTexto = formatearDivergencia(item.divergenciaMacd, item.divergenciaRsi);
 
     tr.innerHTML = `
       <td>
@@ -189,6 +200,7 @@ function renderizarFilasActivos(quotes) {
       <td>$${price.toFixed(2)}</td>
       <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
       <td style="color:#787b86;">${volumenTexto}${rvolTexto}</td>
+      <td>${divergenciaTexto}</td>
     `;
 
     tr.onclick = () => seleccionarFilaActivo(item, tr);
@@ -332,7 +344,7 @@ async function ejecutarBusquedaUniverso(query) {
     return;
   }
 
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
 
   const universo = await obtenerUniverso();
   const soloBroker = document.getElementById('chk-solo-broker')?.checked;
@@ -353,7 +365,7 @@ async function ejecutarBusquedaUniverso(query) {
     const msg = soloBroker
       ? 'Sin resultados marcados como tu broker para esta búsqueda'
       : 'Sin resultados';
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
     return;
   }
 
@@ -367,7 +379,7 @@ async function ejecutarBusquedaUniverso(query) {
         </button>
       </td>
       <td><b>${item.symbol}</b></td>
-      <td colspan="3" style="color:#787b86;">${item.name} — Ver gráfico →</td>
+      <td colspan="4" style="color:#787b86;">${item.name} — Ver gráfico →</td>
     `;
     tr.onclick = () => seleccionarActivoUniverso(item, tr);
     tbody.appendChild(tr);

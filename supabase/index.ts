@@ -425,14 +425,79 @@ Deno.serve(async (req: Request) => {
       const mapaPrecios: Record<string, any> = {};
       preciosData.forEach((p: any) => { mapaPrecios[p.ticker] = p; });
 
+      // Divergencias MACD/RSI (misma caché de 24h, límite de 10 nuevas por
+      // carga). Con una lista de broker grande, tardará varias cargas en
+      // completarse para todos los tickers - es el mismo criterio que ya
+      // usamos en Ganadores/Perdedores para no agotar la cuota de FMP.
+      const simbolosBroker = tickersData.map((t: any) => t.ticker);
+      const divergenciasBroker: Record<string, any> = {};
+
+      if (simbolosBroker.length > 0) {
+        try {
+          const cacheDivRes = await fetch(
+            `${SUPABASE_URL_INTERNO}/rest/v1/divergence_cache?ticker=in.(${simbolosBroker.join(",")})&select=*`,
+            { headers: headersReq }
+          );
+          if (cacheDivRes.ok) {
+            const cacheDivData = await cacheDivRes.json();
+            cacheDivData.forEach((c: any) => { divergenciasBroker[c.ticker] = c; });
+          }
+        } catch (_) {
+          // sin caché disponible
+        }
+      }
+
+      const hace24hBroker = Date.now() - 24 * 60 * 60 * 1000;
+      const faltantesBroker = simbolosBroker.filter((s: string) => {
+        const d = divergenciasBroker[s];
+        if (!d) return true;
+        return new Date(d.updated_at).getTime() < hace24hBroker;
+      });
+
+      const aProcesarBroker = faltantesBroker.slice(0, 10);
+      for (const sym of aProcesarBroker) {
+        let registro: any = { ticker: sym, divergencia_macd: null, divergencia_rsi: null, updated_at: new Date().toISOString() };
+        try {
+          const hUrl = `https://financialmodelingprep.com/stable/historical-price-eod/light?symbol=${encodeURIComponent(sym)}&apikey=${apiKey}`;
+          const hRes = await fetch(hUrl);
+          if (hRes.ok) {
+            const hData = await hRes.json();
+            if (Array.isArray(hData) && hData.length >= 40) {
+              const ordenadoHist = [...hData].reverse();
+              const preciosHist = ordenadoHist.map((d: any) => Number(d.price));
+              const ema12 = calcularEMA(preciosHist, 12);
+              const ema26 = calcularEMA(preciosHist, 26);
+              const macdLine = preciosHist.map((_, i) => ema12[i] - ema26[i]);
+              const rsiLine = calcularRSI(preciosHist, 14);
+              registro.divergencia_macd = detectarDivergenciaGenerica(preciosHist, macdLine);
+              registro.divergencia_rsi = detectarDivergenciaGenerica(preciosHist, rsiLine);
+            }
+          }
+        } catch (_) {
+          // se guarda igualmente como "sin datos"
+        }
+
+        divergenciasBroker[sym] = registro;
+        fetch(`${SUPABASE_URL_INTERNO}/rest/v1/divergence_cache`, {
+          method: "POST",
+          headers: { ...headersReq, Prefer: "resolution=merge-duplicates" },
+          body: JSON.stringify(registro),
+        }).catch(() => {});
+
+        await new Promise((r) => setTimeout(r, 500));
+      }
+
       const listaBroker = tickersData
         .map((t: any) => {
           const info = mapaPrecios[t.ticker];
+          const divergencia = divergenciasBroker[t.ticker];
           return {
             symbol: t.ticker,
             name: "",
             regularMarketPrice: info ? Number(info.precio) || 0 : 0,
             regularMarketChangePercent: info ? Number(info.cambio_pct) || 0 : 0,
+            divergenciaMacd: divergencia?.divergencia_macd || null,
+            divergenciaRsi: divergencia?.divergencia_rsi || null,
           };
         })
         .sort((a: any, b: any) => a.symbol.localeCompare(b.symbol));
