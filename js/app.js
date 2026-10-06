@@ -91,7 +91,7 @@ async function cargarListaMercadoReal() {
   if (!selElement || !tbody) return;
 
   const tipoScreener = selElement.value;
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando mercado...</td></tr>';
 
   try {
     const url = `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
@@ -111,7 +111,7 @@ async function cargarListaMercadoReal() {
 
   } catch (error) {
     console.error("Error al obtener mercado en tiempo real:", error);
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--neg-red);">${error.message || 'Error al conectar con el servidor'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--neg-red);">${error.message || 'Error al conectar con el servidor'}</td></tr>`;
   }
 }
 
@@ -161,8 +161,14 @@ function renderizarFilasActivos(quotes) {
   const tbody = document.getElementById('tbl-activos-body');
   if (!tbody) return;
 
-  const soloBroker = document.getElementById('chk-solo-broker')?.checked;
-  const lista = soloBroker ? quotes.filter(q => tickersBrokerSet.has(q.symbol.toUpperCase())) : quotes;
+  const soloBroker =
+    document.getElementById('chk-solo-broker')?.checked;
+
+  const lista = soloBroker
+    ? quotes.filter(q =>
+        tickersBrokerSet.has(q.symbol.toUpperCase())
+      )
+    : quotes;
 
   tbody.innerHTML = '';
 
@@ -170,40 +176,91 @@ function renderizarFilasActivos(quotes) {
     const msg = soloBroker
       ? 'Ninguno de estos activos está marcado como de tu broker todavía'
       : 'Sin datos disponibles';
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align:center; color:#787b86;">
+          ${msg}
+        </td>
+      </tr>
+    `;
+
     return;
   }
 
   lista.forEach((item, index) => {
     const symbol = item.symbol;
-    const price = item.regularMarketPrice || 0;
-    const change = item.regularMarketChangePercent || 0;
-    const enBroker = tickersBrokerSet.has(symbol.toUpperCase());
+
+    const change =
+      Number(item.regularMarketChangePercent) || 0;
+
+    const numAnalistas =
+      Number(item.num_analistas) || 0;
+
+    const precioObjetivo =
+      Number(item.precio_objetivo) || 0;
+
+    const enBroker =
+      tickersBrokerSet.has(symbol.toUpperCase());
 
     const tr = document.createElement('tr');
-    if (symbol === activoSeleccionado || index === 0) tr.classList.add('active-row');
 
-    const colorClase = change >= 0 ? 'text-pos' : 'text-neg';
-    const signo = change >= 0 ? '+' : '';
-    const volumenTexto = formatearVolumen(item.volumen);
-    const rvol = item.volumenRelativo;
-    const rvolTexto = rvol ? ` <span style="${rvol >= 2 ? 'color:var(--pos-green); font-weight:bold;' : 'color:#787b86;'}">(${rvol.toFixed(1)}x)</span>` : '';
-    const divergenciaTexto = formatearDivergencia(item.divergenciaMacd, item.divergenciaRsi);
+    if (
+      symbol === activoSeleccionado ||
+      index === 0
+    ) {
+      tr.classList.add('active-row');
+    }
+
+    const colorClase =
+      change >= 0 ? 'text-pos' : 'text-neg';
+
+    const signo =
+      change >= 0 ? '+' : '';
+
+    const analistasTexto =
+      numAnalistas > 0
+        ? numAnalistas
+        : '—';
+
+    const objetivoTexto =
+      precioObjetivo > 0
+        ? `$${precioObjetivo.toFixed(2)}`
+        : '—';
 
     tr.innerHTML = `
       <td>
-        <button class="star-btn" title="${enBroker ? 'Quitar de mi broker' : 'Marcar como disponible en mi broker'}" onclick="event.stopPropagation(); toggleBrokerTicker('${symbol}')">
+        <button
+          class="star-btn"
+          title="${enBroker
+            ? 'Quitar de mi broker'
+            : 'Marcar como disponible en mi broker'}"
+          onclick="event.stopPropagation(); toggleBrokerTicker('${symbol}')"
+        >
           ${enBroker ? '✅' : '➕'}
         </button>
       </td>
-      <td><b>${symbol}</b></td>
-      <td>$${price.toFixed(2)}</td>
-      <td class="${colorClase}">${signo}${change.toFixed(2)}%</td>
-      <td style="color:#787b86;">${volumenTexto}${rvolTexto}</td>
-      <td>${divergenciaTexto}</td>
+
+      <td>
+        <b>${symbol}</b>
+      </td>
+
+      <td class="${colorClase}">
+        ${signo}${change.toFixed(2)}%
+      </td>
+
+      <td>
+        ${analistasTexto}
+      </td>
+
+      <td>
+        ${objetivoTexto}
+      </td>
     `;
 
-    tr.onclick = () => seleccionarFilaActivo(item, tr);
+    tr.onclick = () =>
+      seleccionarFilaActivo(item, tr);
+
     tbody.appendChild(tr);
   });
 
@@ -344,7 +401,7 @@ async function ejecutarBusquedaUniverso(query) {
     return;
   }
 
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#787b86;">Buscando...</td></tr>';
 
   const universo = await obtenerUniverso();
   const soloBroker = document.getElementById('chk-solo-broker')?.checked;
@@ -365,7 +422,7 @@ async function ejecutarBusquedaUniverso(query) {
     const msg = soloBroker
       ? 'Sin resultados marcados como tu broker para esta búsqueda'
       : 'Sin resultados';
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#787b86;">${msg}</td></tr>`;
     return;
   }
 
