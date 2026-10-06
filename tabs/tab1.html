@@ -1,71 +1,313 @@
 <div class="scanner-layout full-height">
-  <!-- Columna Izquierda: Scanner Real -->
+
+  <!-- ============================================================
+       COLUMNA IZQUIERDA: SCANNER REAL
+       ============================================================ -->
+
   <div class="side-card">
+
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h4 style="margin:0; color:#fff;">📋 Scanner Real</h4>
-      <button onclick="cargarListaMercadoReal()" style="background:none; border:none; color:#787b86; cursor:pointer;" title="Recargar mercado">🔄</button>
-    </div>
 
-    <div style="display:flex; gap:6px; align-items:center;">
-      <input type="text" id="inp-buscar-universo" placeholder="🔍 Buscar cualquier ticker o empresa (NASDAQ/NYSE)..." style="flex:1; background:#2a2e39; color:#fff; border:1px solid #363c4e; padding:6px; border-radius:4px; font-size:12px;" oninput="buscarEnUniverso(this.value)">
-    </div>
-
-    <label style="font-size:11px; color:#787b86; display:flex; align-items:center; gap:4px; cursor:pointer;">
-      <input type="checkbox" id="chk-solo-broker" onchange="onCambioFiltroBroker()"> Mostrar solo mi broker (Revolut)
-    </label>
-
-    <div class="selectors-row">
-      <select id="sel-screener" onchange="cargarListaMercadoReal()">
-        <option value="day_gainers">🚀 Top Ganadores</option>
-        <option value="day_losers">📉 Top Perdedores</option>
-        <option value="most_actives">💼 Mi Broker (Revolut)</option>
-      </select>
-      <select id="sel-tf-side" onchange="cambiarTimeframe(this.value)">
-        <option value="D">1D</option>
-        <option value="W">1S</option>
-      </select>
-    </div>
-
-    <div class="table-scroll">
-      <table class="mini-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Ticker</th>
-            <th style="cursor:pointer;" onclick="ordenarScanner('cambio')">
-              Cambio <span id="orden-cambio-icono"></span>
-            </th>
-            <th style="cursor:pointer;" onclick="ordenarScanner('analistas')">
-              Analistas <span id="orden-analistas-icono"></span>
-            </th>
-            <th style="cursor:pointer;" onclick="ordenarScanner('objetivo')">
-              P. Objetivo <span id="orden-objetivo-icono"></span>
-            </th>
-          </tr>
-        </thead>
-        <tbody id="tbl-activos-body">
-          <tr><td colspan="5" style="text-align:center; color:#787b86;">Cargando datos en vivo...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Columna Derecha: Métricas, TradingView y acción rápida -->
-  <div class="chart-card">
-    <div class="metrics-bar">
-      <div class="m-item"><span class="lbl">ACTIVO</span><span class="val" id="mb-ticker">---</span></div>
-      <div class="m-item"><span class="lbl">PRECIO REAL</span><span class="val" id="mb-precio">$0.00</span></div>
-      <div class="m-item"><span class="lbl">CAMBIO DIA</span><span class="val" id="mb-upside">0.00%</span></div>
-      <div class="m-item"><span class="lbl">P. OBJETIVO (+15%)</span><span class="val" id="mb-target">$0.00</span></div>
-      <div class="m-item"><span class="lbl">R/R ESTIMADO</span><span class="val text-pos" id="mb-rr">1:2.0</span></div>
-    </div>
-
-    <div id="tv_chart_container" class="tv-chart"></div>
-
-    <div class="risk-bar" style="justify-content:flex-end;">
-      <button class="btn-secondary" onclick="agregarASeguimiento()">
-        👁 Seguir este activo
+      <button
+        onclick="cargarListaMercadoReal()"
+        style="background:none; border:none; color:#787b86; cursor:pointer;"
+        title="Recargar mercado"
+      >
+        🔄
       </button>
     </div>
+
+
+    <!-- BUSCADOR -->
+    <div style="display:flex; gap:6px; align-items:center;">
+
+      <input
+        type="text"
+        id="inp-buscar-universo"
+        placeholder="🔍 Buscar cualquier ticker o empresa (NASDAQ/NYSE)..."
+        style="
+          flex:1;
+          background:#2a2e39;
+          color:#fff;
+          border:1px solid #363c4e;
+          padding:6px;
+          border-radius:4px;
+          font-size:12px;
+        "
+        oninput="buscarEnUniverso(this.value)"
+      >
+
+    </div>
+
+
+    <!-- FILTRO BROKER -->
+    <label
+      style="
+        font-size:11px;
+        color:#787b86;
+        display:flex;
+        align-items:center;
+        gap:4px;
+        cursor:pointer;
+      "
+    >
+
+      <input
+        type="checkbox"
+        id="chk-solo-broker"
+        onchange="onCambioFiltroBroker()"
+      >
+
+      Mostrar solo mi broker (Revolut)
+
+    </label>
+
+
+    <!-- SELECTORES -->
+    <div class="selectors-row">
+
+      <select
+        id="sel-screener"
+        onchange="cargarListaMercadoReal()"
+      >
+        <option value="day_gainers">
+          🚀 Top Ganadores
+        </option>
+
+        <option value="day_losers">
+          📉 Top Perdedores
+        </option>
+
+        <option value="most_actives">
+          💼 Mi Broker (Revolut)
+        </option>
+      </select>
+
+
+      <select
+        id="sel-tf-side"
+        onchange="cambiarTimeframe(this.value)"
+      >
+        <option value="D">
+          1D
+        </option>
+
+        <option value="W">
+          1S
+        </option>
+      </select>
+
+    </div>
+
+
+    <!-- ============================================================
+         TABLA SCANNER
+         ============================================================ -->
+
+    <div class="table-scroll">
+
+      <table class="mini-table">
+
+        <thead>
+
+          <tr>
+
+            <!-- Favorito -->
+            <th></th>
+
+            <!-- Ticker -->
+            <th>Ticker</th>
+
+            <!-- Cambio -->
+            <th
+              style="cursor:pointer;"
+              onclick="ordenarScanner('cambio')"
+            >
+              Cambio
+              <span id="orden-cambio-icono"></span>
+            </th>
+
+            <!-- Analistas -->
+            <th
+              style="cursor:pointer;"
+              onclick="ordenarScanner('analistas')"
+            >
+              Analistas
+              <span id="orden-analistas-icono"></span>
+            </th>
+
+            <!-- Precio objetivo -->
+            <th
+              style="cursor:pointer;"
+              onclick="ordenarScanner('objetivo')"
+            >
+              P. Objetivo
+              <span id="orden-objetivo-icono"></span>
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody id="tbl-activos-body">
+
+          <tr>
+
+            <td
+              colspan="5"
+              style="
+                text-align:center;
+                color:#787b86;
+              "
+            >
+              Cargando datos en vivo...
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
   </div>
+
+
+  <!-- ============================================================
+       COLUMNA DERECHA
+       MÉTRICAS + TRADINGVIEW + ACCIÓN
+       ============================================================ -->
+
+  <div class="chart-card">
+
+
+    <!-- ============================================================
+         BARRA DE MÉTRICAS
+         ============================================================ -->
+
+    <div class="metrics-bar">
+
+
+      <!-- TICKER -->
+      <div class="m-item">
+
+        <span class="lbl">
+          ACTIVO
+        </span>
+
+        <span
+          class="val"
+          id="mb-ticker"
+        >
+          ---
+        </span>
+
+      </div>
+
+
+      <!-- PRECIO REAL -->
+      <div class="m-item">
+
+        <span class="lbl">
+          PRECIO REAL
+        </span>
+
+        <span
+          class="val"
+          id="mb-precio"
+        >
+          $0.00
+        </span>
+
+      </div>
+
+
+      <!-- CAMBIO -->
+      <div class="m-item">
+
+        <span class="lbl">
+          CAMBIO DIA
+        </span>
+
+        <span
+          class="val"
+          id="mb-upside"
+        >
+          0.00%
+        </span>
+
+      </div>
+
+
+      <!-- PRECIO OBJETIVO DE ANALISTAS -->
+      <div class="m-item">
+
+        <span class="lbl">
+          P. OBJETIVO ANALISTAS
+        </span>
+
+        <span
+          class="val"
+          id="mb-target"
+        >
+          —
+        </span>
+
+      </div>
+
+
+      <!-- R/R -->
+      <div class="m-item">
+
+        <span class="lbl">
+          R/R ESTIMADO
+        </span>
+
+        <span
+          class="val text-pos"
+          id="mb-rr"
+        >
+          1:2.0
+        </span>
+
+      </div>
+
+
+    </div>
+
+
+    <!-- ============================================================
+         TRADINGVIEW
+         ============================================================ -->
+
+    <div
+      id="tv_chart_container"
+      class="tv-chart"
+    ></div>
+
+
+    <!-- ============================================================
+         ACCIÓN
+         ============================================================ -->
+
+    <div
+      class="risk-bar"
+      style="justify-content:flex-end;"
+    >
+
+      <button
+        class="btn-secondary"
+        onclick="agregarASeguimiento()"
+      >
+        👁 Seguir este activo
+      </button>
+
+    </div>
+
+
+  </div>
+
 </div>
