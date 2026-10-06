@@ -425,10 +425,8 @@ Deno.serve(async (req: Request) => {
       const mapaPrecios: Record<string, any> = {};
       preciosData.forEach((p: any) => { mapaPrecios[p.ticker] = p; });
 
-      // Divergencias MACD/RSI (misma caché de 24h, límite de 10 nuevas por
-      // carga). Con una lista de broker grande, tardará varias cargas en
-      // completarse para todos los tickers - es el mismo criterio que ya
-      // usamos en Ganadores/Perdedores para no agotar la cuota de FMP.
+      // Divergencias MACD/RSI: SOLO LECTURA de lo que ya calculó el escaneo
+      // diario (scan-macd-divergence). Cero llamadas nuevas a FMP aquí.
       const simbolosBroker = tickersData.map((t: any) => t.ticker);
       const divergenciasBroker: Record<string, any> = {};
 
@@ -443,48 +441,8 @@ Deno.serve(async (req: Request) => {
             cacheDivData.forEach((c: any) => { divergenciasBroker[c.ticker] = c; });
           }
         } catch (_) {
-          // sin caché disponible
+          // sin caché disponible, se mostrará sin divergencia por ahora
         }
-      }
-
-      const hace24hBroker = Date.now() - 24 * 60 * 60 * 1000;
-      const faltantesBroker = simbolosBroker.filter((s: string) => {
-        const d = divergenciasBroker[s];
-        if (!d) return true;
-        return new Date(d.updated_at).getTime() < hace24hBroker;
-      });
-
-      const aProcesarBroker = faltantesBroker.slice(0, 10);
-      for (const sym of aProcesarBroker) {
-        let registro: any = { ticker: sym, divergencia_macd: null, divergencia_rsi: null, updated_at: new Date().toISOString() };
-        try {
-          const hUrl = `https://financialmodelingprep.com/stable/historical-price-eod/light?symbol=${encodeURIComponent(sym)}&apikey=${apiKey}`;
-          const hRes = await fetch(hUrl);
-          if (hRes.ok) {
-            const hData = await hRes.json();
-            if (Array.isArray(hData) && hData.length >= 40) {
-              const ordenadoHist = [...hData].reverse();
-              const preciosHist = ordenadoHist.map((d: any) => Number(d.price));
-              const ema12 = calcularEMA(preciosHist, 12);
-              const ema26 = calcularEMA(preciosHist, 26);
-              const macdLine = preciosHist.map((_, i) => ema12[i] - ema26[i]);
-              const rsiLine = calcularRSI(preciosHist, 14);
-              registro.divergencia_macd = detectarDivergenciaGenerica(preciosHist, macdLine);
-              registro.divergencia_rsi = detectarDivergenciaGenerica(preciosHist, rsiLine);
-            }
-          }
-        } catch (_) {
-          // se guarda igualmente como "sin datos"
-        }
-
-        divergenciasBroker[sym] = registro;
-        fetch(`${SUPABASE_URL_INTERNO}/rest/v1/divergence_cache`, {
-          method: "POST",
-          headers: { ...headersReq, Prefer: "resolution=merge-duplicates" },
-          body: JSON.stringify(registro),
-        }).catch(() => {});
-
-        await new Promise((r) => setTimeout(r, 500));
       }
 
       const listaBroker = tickersData
@@ -712,9 +670,9 @@ Deno.serve(async (req: Request) => {
       return true;
     });
 
-    // Divergencias MACD/RSI: misma estrategia de caché 24h que el perfil,
-    // aplicada solo a los tickers que ya pasaron el resto de filtros (menos
-    // candidatos = menos cuota gastada). Límite de 10 nuevos por carga.
+    // Divergencias MACD/RSI: SOLO LECTURA de lo que ya calculó el escaneo
+    // diario (scan-macd-divergence). No se piden datos nuevos aquí - eso
+    // es justo lo que agotaba la cuota de FMP en cada carga del Scanner.
     const simbolosDiv = filtrada.map((it: any) => it.symbol);
     const divergencias: Record<string, any> = {};
 
@@ -729,47 +687,8 @@ Deno.serve(async (req: Request) => {
           cacheDivData.forEach((c: any) => { divergencias[c.ticker] = c; });
         }
       } catch (_) {
-        // sin caché disponible, se calculará bajo demanda lo que se pueda
+        // sin caché disponible, se mostrará sin divergencia por ahora
       }
-    }
-
-    const faltantesDiv = simbolosDiv.filter((s: string) => {
-      const d = divergencias[s];
-      if (!d) return true;
-      return new Date(d.updated_at).getTime() < hace24h;
-    });
-
-    const aProcesarDiv = faltantesDiv.slice(0, 10);
-    for (const sym of aProcesarDiv) {
-      let registro: any = { ticker: sym, divergencia_macd: null, divergencia_rsi: null, updated_at: new Date().toISOString() };
-      try {
-        const hUrl = `https://financialmodelingprep.com/stable/historical-price-eod/light?symbol=${encodeURIComponent(sym)}&apikey=${apiKey}`;
-        const hRes = await fetch(hUrl);
-        if (hRes.ok) {
-          const hData = await hRes.json();
-          if (Array.isArray(hData) && hData.length >= 40) {
-            const ordenadoHist = [...hData].reverse();
-            const preciosHist = ordenadoHist.map((d: any) => Number(d.price));
-            const ema12 = calcularEMA(preciosHist, 12);
-            const ema26 = calcularEMA(preciosHist, 26);
-            const macdLine = preciosHist.map((_, i) => ema12[i] - ema26[i]);
-            const rsiLine = calcularRSI(preciosHist, 14);
-            registro.divergencia_macd = detectarDivergenciaGenerica(preciosHist, macdLine);
-            registro.divergencia_rsi = detectarDivergenciaGenerica(preciosHist, rsiLine);
-          }
-        }
-      } catch (_) {
-        // se guarda igualmente como "sin datos" para no reintentarlo cada carga
-      }
-
-      divergencias[sym] = registro;
-      fetch(`${SUPABASE_URL_PERFIL}/rest/v1/divergence_cache`, {
-        method: "POST",
-        headers: { ...headersPerfil, Prefer: "resolution=merge-duplicates" },
-        body: JSON.stringify(registro),
-      }).catch(() => {});
-
-      await new Promise((r) => setTimeout(r, 500));
     }
 
     const recortada = filtrada.slice(0, count);
