@@ -179,7 +179,7 @@ async function cargarListaMercadoReal() {
     // menos extremos y pueda aproximarse mejor al listado del broker.
     // El servidor aplica el mínimo de capitalización de 300 millones.
     const url =
-      `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=1000&min_market_cap=300000000`;
+      `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=1000&min_market_cap=100000000`;
 
     const res = await fetch(url, {
       headers: {
