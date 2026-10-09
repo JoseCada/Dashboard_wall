@@ -41,6 +41,81 @@ function opcionesGraficoCompleto(symbol, interval, containerId, studies) {
 
 
 // ============================================================
+// REDIMENSIONAR COLUMNA DEL SCANNER
+// ============================================================
+
+function configurarRedimensionScanner(container) {
+  const layout = container.querySelector('.scanner-layout');
+  const columna = layout?.querySelector('.side-card');
+  const grafico = layout?.querySelector('.chart-card');
+
+  if (!layout || !columna || !grafico) return;
+  if (layout.querySelector('.scanner-resizer')) return;
+
+  const resizer = document.createElement('div');
+  resizer.className = 'scanner-resizer';
+  resizer.setAttribute('role', 'separator');
+  resizer.setAttribute('aria-label', 'Cambiar ancho de la columna del scanner');
+  resizer.setAttribute('title', 'Arrastra para ensanchar o estrechar el scanner');
+  resizer.setAttribute('tabindex', '0');
+  layout.insertBefore(resizer, grafico);
+
+  let anchoGuardado = 380;
+  try {
+    const guardado = Number(localStorage.getItem('scanner-column-width'));
+    if (Number.isFinite(guardado) && guardado >= 280) anchoGuardado = guardado;
+  } catch (_) {}
+  layout.style.setProperty('--scanner-col-width', `${anchoGuardado}px`);
+
+  let arrastrando = false;
+
+  const limitarAncho = (ancho) => {
+    const maximo = Math.min(900, Math.floor(window.innerWidth * 0.65));
+    return Math.max(280, Math.min(maximo, ancho));
+  };
+
+  const aplicarAncho = (ancho) => {
+    const anchoFinal = limitarAncho(ancho);
+    layout.style.setProperty('--scanner-col-width', `${anchoFinal}px`);
+    try {
+      localStorage.setItem('scanner-column-width', String(anchoFinal));
+    } catch (_) {}
+  };
+
+  resizer.addEventListener('pointerdown', (event) => {
+    arrastrando = true;
+    resizer.setPointerCapture?.(event.pointerId);
+    document.body.classList.add('scanner-resizing');
+    event.preventDefault();
+  });
+
+  resizer.addEventListener('pointermove', (event) => {
+    if (!arrastrando) return;
+    const rect = layout.getBoundingClientRect();
+    aplicarAncho(event.clientX - rect.left);
+  });
+
+  const terminarArrastre = () => {
+    arrastrando = false;
+    document.body.classList.remove('scanner-resizing');
+  };
+
+  resizer.addEventListener('pointerup', terminarArrastre);
+  resizer.addEventListener('pointercancel', terminarArrastre);
+  resizer.addEventListener('lostpointercapture', terminarArrastre);
+
+  resizer.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const actual = parseFloat(
+      getComputedStyle(layout).getPropertyValue('--scanner-col-width')
+    ) || 380;
+    aplicarAncho(actual + (event.key === 'ArrowRight' ? 20 : -20));
+  });
+}
+
+
+// ============================================================
 // 1. CARGA MODULAR DE LA PESTAÑA SCANNER
 // ============================================================
 
@@ -54,6 +129,8 @@ async function cargarPestanaScanner() {
 
     const html = await response.text();
     container.innerHTML = html;
+
+    configurarRedimensionScanner(container);
 
     await cargarTickersBroker();
     cargarListaMercadoReal();
