@@ -180,3 +180,77 @@ body {
   padding: 0;
   line-height: 1;
 }
+/* Pega estas reglas AL FINAL de tu css/style.css existente. */
+.scanner-layout {
+  --scanner-col-width: 380px;
+  display: grid;
+  grid-template-columns: minmax(280px, var(--scanner-col-width)) 8px minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  gap: 8px;
+  margin-bottom: 15px;
+  min-width: 0;
+}
+
+.scanner-layout > .side-card {
+  grid-column: 1;
+  min-width: 0;
+}
+
+.scanner-layout > .chart-card {
+  grid-column: 3;
+  min-width: 0;
+}
+
+.scanner-resizer {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  width: 8px;
+  min-height: 120px;
+  cursor: col-resize;
+  border-radius: 4px;
+  background: #2a2e39;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+}
+
+.scanner-resizer:hover,
+.scanner-resizer:focus-visible {
+  background: var(--accent-blue);
+  outline: none;
+}
+
+.scanner-resizer::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 2px;
+  height: 36px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: #787b86;
+}
+
+.scanner-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.scanner-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.table-scroll {
+  overflow: auto;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .scanner-layout {
+    --scanner-col-width: 320px;
+    grid-template-columns: minmax(260px, var(--scanner-col-width)) 8px minmax(0, 1fr);
+  }
+}
