@@ -175,8 +175,10 @@ async function cargarListaMercadoReal() {
 
   try {
 
+    // Solicitamos hasta 100 candidatos para disponer de suficientes
+    // activos antes de filtrar y ordenar los resultados.
     const url =
-      `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=50`;
+      `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=100`;
 
     const res = await fetch(url, {
       headers: {
@@ -196,16 +198,66 @@ async function cargarListaMercadoReal() {
       );
     }
 
-    let quotes =
+    const respuesta =
       await res.json();
 
-    // Añadimos los tickers del broker que no estén
-    // entre los resultados principales.
-    quotes =
-      await sumarTickersBrokerFaltantes(quotes);
+    let quotes =
+      Array.isArray(respuesta) ? respuesta : [];
 
-    datosActualesMercado =
-      Array.isArray(quotes) ? quotes : [];
+    // Obtener el cambio porcentual, admitiendo distintos nombres
+    // de campo y valores que lleguen como texto.
+    const obtenerCambioPct = (item) => {
+
+      const valor =
+        item?.regularMarketChangePercent ??
+        item?.changesPercentage ??
+        item?.changePercentage ??
+        item?.cambio_pct ??
+        item?.change_pct ??
+        0;
+
+      const numero = typeof valor === 'string'
+        ? parseFloat(
+            valor.replace('%', '').replace(',', '.')
+          )
+        : Number(valor);
+
+      return Number.isFinite(numero)
+        ? numero
+        : 0;
+    };
+
+    // GANADORES: solo acciones con variación positiva.
+    // Ordenadas de mayor a menor subida.
+    if (tipoScreener === 'day_gainers') {
+
+      quotes = quotes
+        .filter(item => obtenerCambioPct(item) > 0)
+        .sort(
+          (a, b) =>
+            obtenerCambioPct(b) - obtenerCambioPct(a)
+        );
+
+    }
+
+    // PERDEDORES: solo acciones con variación negativa.
+    // Ordenadas de mayor caída a menor caída.
+    else if (tipoScreener === 'day_losers') {
+
+      quotes = quotes
+        .filter(item => obtenerCambioPct(item) < 0)
+        .sort(
+          (a, b) =>
+            obtenerCambioPct(a) - obtenerCambioPct(b)
+        );
+
+    }
+
+    // Mostrar como máximo 50 resultados.
+    quotes = quotes.slice(0, 50);
+
+    // Guardar los resultados que realmente se mostrarán.
+    datosActualesMercado = quotes;
 
     renderizarFilasActivos(
       datosActualesMercado
@@ -214,7 +266,7 @@ async function cargarListaMercadoReal() {
   } catch (error) {
 
     console.error(
-      "Error al obtener mercado en tiempo real:",
+      'Error al obtener mercado en tiempo real:',
       error
     );
 
