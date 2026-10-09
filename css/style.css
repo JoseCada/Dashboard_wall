@@ -70,6 +70,7 @@ body {
   flex-direction: column;
   gap: 10px;
   min-height: 0; /* necesario para que los hijos con flex:1 puedan encoger/crecer bien */
+  min-width: 300px; /* necesario para que los hijos con flex:1 puedan encoger/crecer bien */
 }
 
 .selectors-row {
