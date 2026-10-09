@@ -72,3 +72,166 @@
     grid-template-columns: minmax(260px, var(--scanner-col-width)) 8px minmax(0, 1fr);
   }
 }
+
+/* ==========================================================
+   SCANNER + GRÁFICO: DOS PANELES EN HORIZONTAL
+   ========================================================== */
+
+.scanner-layout {
+  --scanner-col-width: 380px;
+
+  display: grid;
+  grid-template-columns:
+    minmax(280px, var(--scanner-col-width))
+    8px
+    minmax(0, 1fr);
+
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  align-items: stretch;
+  margin-bottom: 15px;
+}
+
+.scanner-layout.full-height {
+  height: calc(100vh - 110px);
+  min-height: 400px;
+}
+
+/* Evita que el ancho mínimo de las tarjetas
+   empuje el gráfico a una segunda fila. */
+
+.scanner-layout > .side-card,
+.scanner-layout > .chart-card {
+  grid-row: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.scanner-layout > .side-card {
+  grid-column: 1;
+}
+
+.scanner-layout > .scanner-resizer {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.scanner-layout > .chart-card {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Divisor arrastrable */
+
+.scanner-resizer {
+  align-self: stretch;
+  width: 8px;
+  min-height: 120px;
+  cursor: col-resize;
+  border-radius: 4px;
+  background: var(--border-color, #2a2e39);
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  z-index: 5;
+}
+
+.scanner-resizer:hover,
+.scanner-resizer:focus-visible {
+  background: var(--accent-blue, #2962ff);
+  outline: none;
+}
+
+.scanner-resizer::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 2px;
+  height: 36px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: #787b86;
+}
+
+.scanner-resizing,
+.scanner-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* Tabla: scroll dentro del panel izquierdo */
+
+.scanner-layout .table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+}
+
+/* TradingView debe ocupar el espacio disponible */
+
+.scanner-layout .tv-chart {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 250px;
+  height: auto;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* El contenedor de TradingView debe tener dimensiones reales */
+
+#tv_chart_container {
+  width: 100%;
+  min-width: 0;
+  min-height: 250px;
+}
+
+/* Métricas y botones no deben ensanchar la tarjeta */
+
+.scanner-layout .metrics-bar,
+.scanner-layout .risk-bar {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* En pantallas pequeñas, apilar los paneles */
+
+@media (max-width: 700px) {
+  .scanner-layout,
+  .scanner-layout.full-height {
+    height: auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 8px minmax(400px, 65vh);
+  }
+
+  .scanner-layout > .side-card {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 350px;
+  }
+
+  .scanner-layout > .scanner-resizer {
+    display: none;
+  }
+
+  .scanner-layout > .chart-card {
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 400px;
+  }
+}
