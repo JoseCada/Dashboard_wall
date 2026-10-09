@@ -175,10 +175,11 @@ async function cargarListaMercadoReal() {
 
   try {
 
-    // Solicitamos hasta 100 candidatos para disponer de suficientes
-    // activos antes de filtrar y ordenar los resultados.
+    // Pedimos hasta 1000 candidatos para que el listado alcance porcentajes
+    // menos extremos y pueda aproximarse mejor al listado del broker.
+    // El servidor aplica el mínimo de capitalización de 300 millones.
     const url =
-      `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=100`;
+      `${SUPABASE_URL}/functions/v1/market-screener?type=${tipoScreener}&count=1000&min_market_cap=300000000`;
 
     const res = await fetch(url, {
       headers: {
@@ -204,59 +205,36 @@ async function cargarListaMercadoReal() {
     let quotes =
       Array.isArray(respuesta) ? respuesta : [];
 
-    // Obtener el cambio porcentual, admitiendo distintos nombres
-    // de campo y valores que lleguen como texto.
+    // No añadir aquí tickers del broker: esta tabla debe mostrar
+    // exclusivamente los mayores ganadores o perdedores del día.
+    // Normalizamos el porcentaje por si la API lo devuelve como texto.
     const obtenerCambioPct = (item) => {
-
       const valor =
         item?.regularMarketChangePercent ??
         item?.changesPercentage ??
         item?.changePercentage ??
-        item?.cambio_pct ??
-        item?.change_pct ??
         0;
 
       const numero = typeof valor === 'string'
-        ? parseFloat(
-            valor.replace('%', '').replace(',', '.')
-          )
+        ? parseFloat(valor.replace('%', '').replace(',', '.'))
         : Number(valor);
 
-      return Number.isFinite(numero)
-        ? numero
-        : 0;
+      return Number.isFinite(numero) ? numero : 0;
     };
 
-    // GANADORES: solo acciones con variación positiva.
-    // Ordenadas de mayor a menor subida.
     if (tipoScreener === 'day_gainers') {
-
       quotes = quotes
         .filter(item => obtenerCambioPct(item) > 0)
-        .sort(
-          (a, b) =>
-            obtenerCambioPct(b) - obtenerCambioPct(a)
-        );
-
-    }
-
-    // PERDEDORES: solo acciones con variación negativa.
-    // Ordenadas de mayor caída a menor caída.
-    else if (tipoScreener === 'day_losers') {
-
+        .sort((a, b) => obtenerCambioPct(b) - obtenerCambioPct(a));
+    } else if (tipoScreener === 'day_losers') {
       quotes = quotes
         .filter(item => obtenerCambioPct(item) < 0)
-        .sort(
-          (a, b) =>
-            obtenerCambioPct(a) - obtenerCambioPct(b)
-        );
-
+        .sort((a, b) => obtenerCambioPct(a) - obtenerCambioPct(b));
     }
 
-    // Mostrar como máximo 50 resultados.
-    quotes = quotes.slice(0, 50);
+    // Límite visible: hasta 250 resultados.
+    quotes = quotes.slice(0, 250);
 
-    // Guardar los resultados que realmente se mostrarán.
     datosActualesMercado = quotes;
 
     renderizarFilasActivos(
@@ -266,7 +244,7 @@ async function cargarListaMercadoReal() {
   } catch (error) {
 
     console.error(
-      'Error al obtener mercado en tiempo real:',
+      "Error al obtener mercado en tiempo real:",
       error
     );
 
