@@ -1,237 +1,183 @@
-/* Pega estas reglas AL FINAL de tu css/style.css existente. */
+:root {
+  --bg-dark: #131722;
+  --bg-card: #1e222d;
+  --border-color: #2a2e39;
+  --text-color: #d1d4dc;
+  --accent-blue: #2962ff;
+  --pos-green: #089981;
+  --neg-red: #f23645;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-dark);
+  color: var(--text-color);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* TABS */
+.tabs-header {
+  display: flex;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 15px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: #787b86;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+.tab-btn:hover { color: #fff; }
+.tab-btn.active {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+}
+
+.tab-content {
+  display: none;
+  padding: 15px;
+}
+.tab-content.active {
+  display: block;
+}
+
+/* LAYOUT SCANNER (usado en Scanner y en Lista de Seguimiento) */
 .scanner-layout {
-  --scanner-col-width: 380px;
   display: grid;
-  grid-template-columns: minmax(280px, var(--scanner-col-width)) 8px minmax(0, 1fr);
+  grid-template-columns: 280px 1fr;
   grid-template-rows: 1fr;
-  gap: 8px;
+  gap: 15px;
   margin-bottom: 15px;
-  min-width: 0;
+}
+/* Con esta clase, el layout ocupa toda la altura visible de la pantalla
+   (restando la barra de pestañas + el padding de la propia pestaña) */
+.scanner-layout.full-height {
+  height: calc(100vh - 110px);
+}
+.side-card, .chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0; /* necesario para que los hijos con flex:1 puedan encoger/crecer bien */
+  min-width: 300; /* necesario para que los hijos con flex:1 puedan encoger/crecer bien */
 }
 
-.scanner-layout > .side-card {
-  grid-column: 1;
-  min-width: 0;
+.selectors-row {
+  display: flex;
+  gap: 8px;
 }
-
-.scanner-layout > .chart-card {
-  grid-column: 3;
-  min-width: 0;
-}
-
-.scanner-resizer {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: stretch;
-  width: 8px;
-  min-height: 120px;
-  cursor: col-resize;
-  border-radius: 4px;
+.selectors-row select {
+  flex: 1;
   background: #2a2e39;
-  position: relative;
-  touch-action: none;
-  user-select: none;
-}
-
-.scanner-resizer:hover,
-.scanner-resizer:focus-visible {
-  background: var(--accent-blue);
-  outline: none;
-}
-
-.scanner-resizer::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 3px;
-  width: 2px;
-  height: 36px;
-  transform: translateY(-50%);
-  border-radius: 2px;
-  background: #787b86;
-}
-
-.scanner-resizing {
-  cursor: col-resize !important;
-  user-select: none !important;
-}
-
-.scanner-resizing * {
-  cursor: col-resize !important;
-  user-select: none !important;
+  color: #fff;
+  border: 1px solid #363c4e;
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 12px;
 }
 
 .table-scroll {
-  overflow: auto;
-  min-width: 0;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
-
-@media (max-width: 900px) {
-  .scanner-layout {
-    --scanner-col-width: 320px;
-    grid-template-columns: minmax(260px, var(--scanner-col-width)) 8px minmax(0, 1fr);
-  }
-}
-
-/* ==========================================================
-   SCANNER + GRÁFICO: DOS PANELES EN HORIZONTAL
-   ========================================================== */
-
-.scanner-layout {
-  --scanner-col-width: 380px;
-
-  display: grid;
-  grid-template-columns:
-    minmax(280px, var(--scanner-col-width))
-    8px
-    minmax(0, 1fr);
-
-  grid-template-rows: minmax(0, 1fr);
-  gap: 8px;
-
+.mini-table {
   width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  align-items: stretch;
-  margin-bottom: 15px;
+  border-collapse: collapse;
+  font-size: 12px;
 }
-
-.scanner-layout.full-height {
-  height: calc(100vh - 110px);
-  min-height: 400px;
+.mini-table th, .mini-table td {
+  padding: 8px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
 }
-
-/* Evita que el ancho mínimo de las tarjetas
-   empuje el gráfico a una segunda fila. */
-
-.scanner-layout > .side-card,
-.scanner-layout > .chart-card {
-  grid-row: 1;
-  min-width: 0;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
+.mini-table tr { cursor: pointer; }
+.mini-table tr:hover, .mini-table tr.active-row {
+  background: rgba(41, 98, 255, 0.18);
 }
+.text-pos { color: var(--pos-green); font-weight: bold; }
+.text-neg { color: var(--neg-red); font-weight: bold; }
 
-.scanner-layout > .side-card {
-  grid-column: 1;
-}
-
-.scanner-layout > .scanner-resizer {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.scanner-layout > .chart-card {
-  grid-column: 3;
+/* BARRA DE MÉTRICAS Y GRÁFICO */
+.metrics-bar {
   display: flex;
-  flex-direction: column;
-  min-height: 0;
+  justify-content: space-between;
+  background: #2a2e39;
+  padding: 8px 15px;
+  border-radius: 6px;
 }
+.m-item { display: flex; flex-direction: column; }
+.m-item .lbl { font-size: 10px; color: #787b86; }
+.m-item .val { font-size: 13px; font-weight: bold; color: #fff; }
 
-/* Divisor arrastrable */
-
-.scanner-resizer {
-  align-self: stretch;
-  width: 8px;
-  min-height: 120px;
-  cursor: col-resize;
+/* Gráfico de TradingView: ocupa todo el espacio restante dentro de chart-card */
+.tv-chart {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
   border-radius: 4px;
-  background: var(--border-color, #2a2e39);
-  position: relative;
-  touch-action: none;
-  user-select: none;
-  z-index: 5;
-}
-
-.scanner-resizer:hover,
-.scanner-resizer:focus-visible {
-  background: var(--accent-blue, #2962ff);
-  outline: none;
-}
-
-.scanner-resizer::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 3px;
-  width: 2px;
-  height: 36px;
-  transform: translateY(-50%);
-  border-radius: 2px;
-  background: #787b86;
-}
-
-.scanner-resizing,
-.scanner-resizing * {
-  cursor: col-resize !important;
-  user-select: none !important;
-}
-
-/* Tabla: scroll dentro del panel izquierdo */
-
-.scanner-layout .table-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  min-width: 0;
-  overflow: auto;
-}
-
-/* TradingView debe ocupar el espacio disponible */
-
-.scanner-layout .tv-chart {
-  flex: 1 1 0;
-  width: 100%;
-  min-width: 0;
-  min-height: 250px;
-  height: auto;
   overflow: hidden;
-  position: relative;
-  box-sizing: border-box;
+  background: var(--bg-dark);
 }
 
-/* El contenedor de TradingView debe tener dimensiones reales */
-
-#tv_chart_container {
-  width: 100%;
-  min-width: 0;
-  min-height: 250px;
+/* BARRA DE RIESGO */
+.risk-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
 }
-
-/* Métricas y botones no deben ensanchar la tarjeta */
-
-.scanner-layout .metrics-bar,
-.scanner-layout .risk-bar {
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
+.risk-bar input, .risk-bar select {
+  background: #2a2e39;
+  color: #fff;
+  border: 1px solid #363c4e;
+  padding: 6px;
+  border-radius: 4px;
+  width: 85px;
 }
+.btn-primary {
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-primary:hover { opacity: 0.9; }
 
-/* En pantallas pequeñas, apilar los paneles */
+.btn-secondary {
+  background: #2a2e39;
+  color: var(--text-color);
+  border: 1px solid #363c4e;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-secondary:hover { border-color: var(--accent-blue); color: #fff; }
 
-@media (max-width: 700px) {
-  .scanner-layout,
-  .scanner-layout.full-height {
-    height: auto;
-    min-height: 0;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 8px minmax(400px, 65vh);
-  }
-
-  .scanner-layout > .side-card {
-    grid-column: 1;
-    grid-row: 1;
-    min-height: 350px;
-  }
-
-  .scanner-layout > .scanner-resizer {
-    display: none;
-  }
-
-  .scanner-layout > .chart-card {
-    grid-column: 1;
-    grid-row: 3;
-    min-height: 400px;
-  }
+.star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 0;
+  line-height: 1;
 }
