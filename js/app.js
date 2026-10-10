@@ -2,6 +2,18 @@ let activoSeleccionado = "NVDA";
 let timeframeSeleccionado = "D";
 let datosActualesMercado = [];
 
+// Abre el gráfico del ticker en TradingView sin seleccionar la fila.
+function abrirTradingViewTicker(symbol) {
+  const ticker = String(symbol || "").trim().toUpperCase();
+  if (!ticker) return;
+
+  const url =
+    "https://es.tradingview.com/chart/ZdAlHYYW/?symbol=" +
+    encodeURIComponent(ticker);
+
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 // Indicadores por defecto: MACD + una Media Móvil Exponencial.
 // Nota: el widget gratuito de TradingView no permite varias instancias del
 // mismo indicador con longitudes distintas vía configuración (eso requiere
@@ -628,8 +640,17 @@ function renderizarFilasActivos(quotes) {
         </button>
       </td>
 
-      <td>
+      <td style="white-space:nowrap;">
         <b>${symbol}</b>
+        <button
+          class="star-btn"
+          title="Abrir ${symbol} en TradingView"
+          aria-label="Abrir ${symbol} en TradingView"
+          style="margin-left:5px;"
+          onclick="event.stopPropagation(); abrirTradingViewTicker('${symbol}')"
+        >
+          🔗
+        </button>
       </td>
 
       <td class="${colorClase}">
@@ -1122,8 +1143,17 @@ async function ejecutarBusquedaUniverso(query) {
         </button>
       </td>
 
-      <td>
+      <td style="white-space:nowrap;">
         <b>${symbol}</b>
+        <button
+          class="star-btn"
+          title="Abrir ${symbol} en TradingView"
+          aria-label="Abrir ${symbol} en TradingView"
+          style="margin-left:5px;"
+          onclick="event.stopPropagation(); abrirTradingViewTicker('${symbol}')"
+        >
+          🔗
+        </button>
       </td>
 
       <td style="color:#787b86;">
