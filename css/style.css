@@ -263,3 +263,87 @@ body {
     min-height: 400px;
   }
 }
+
+/* SOLUCIÓN: SCANNER + DIVISOR + GRÁFICO EN UNA FILA */
+
+.scanner-layout,
+.scanner-layout.full-height {
+  display: grid !important;
+  grid-template-columns: 340px 8px minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: calc(100vh - 110px);
+  min-height: 400px;
+  box-sizing: border-box;
+}
+
+.scanner-layout > .side-card {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+.scanner-layout > .scanner-resizer {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 8px !important;
+  min-width: 8px !important;
+  align-self: stretch;
+  cursor: col-resize;
+  z-index: 5;
+}
+
+.scanner-layout > .chart-card {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scanner-layout .table-scroll {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+}
+
+.scanner-layout #tv_chart_container {
+  flex: 1 1 0;
+  width: 100% !important;
+  min-width: 0;
+  min-height: 250px;
+}
+
+@media (max-width: 700px) {
+  .scanner-layout,
+  .scanner-layout.full-height {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto minmax(400px, 65vh) !important;
+    height: auto;
+  }
+
+  .scanner-layout > .side-card {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  .scanner-layout > .scanner-resizer {
+    display: none;
+  }
+
+  .scanner-layout > .chart-card {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    min-height: 400px !important;
+  }
+}
