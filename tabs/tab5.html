@@ -24,7 +24,14 @@
       <h3 id="id-form-title">➕ Registrar operación simulada</h3>
       <form id="id-trade-form" onsubmit="guardarOperacionIntradia(event)">
         <div class="id-form-grid">
-          <label>Ticker<input id="id-ticker" required maxlength="20" placeholder="Ej. EURUSD o AAPL" style="text-transform:uppercase"></label>
+          <label>Activo<select id="id-ticker" required onchange="seleccionarActivoIntradia()">
+              <option value="GC1!">GC1! — Oro</option>
+              <option value="CL1!">CL1! — Petróleo WTI</option>
+              <option value="NQ1!">NQ1! — Nasdaq 100</option>
+              <option value="ES1!">ES1! — S&amp;P 500</option>
+              <option value="MNQ1!">MNQ1! — Micro Nasdaq 100</option>
+              <option value="EURUSD">EURUSD — Euro / dólar</option>
+            </select></label>
           <label>Mercado
             <select id="id-market"><option>Forex</option><option>Futuros</option><option>Acciones</option><option>Índices</option><option>Cripto</option><option>Otro</option></select>
           </label>
@@ -45,8 +52,8 @@
 
     <section class="side-card intradia-chart-card">
       <div class="id-chart-heading"><div><h3>📈 Gráfico TradingView</h3><span id="id-chart-symbol">Selecciona un ticker</span></div><button class="btn-secondary" onclick="cargarGraficoIntradia()">Actualizar gráfico</button></div>
-      <div class="id-tv-wrap" id="id-tv-wrap"><div class="id-tv-placeholder">Introduce un ticker en el formulario y pulsa “Cargar gráfico”.</div></div>
-      <div class="id-chart-tools"><label>Ticker del gráfico<input id="id-chart-ticker" placeholder="Ej. OANDA:EURUSD o NASDAQ:AAPL"></label><button class="btn-primary" onclick="cargarGraficoIntradia()">Cargar gráfico</button></div>
+      <div class="id-tv-wrap" id="id-tv-wrap"><div class="id-tv-placeholder">Selecciona un activo para cargar su gráfico.</div></div>
+      <div class="id-chart-tools"><span>El gráfico sigue el activo seleccionado en el formulario.</span><button class="btn-primary" onclick="cargarGraficoIntradia()">Actualizar gráfico</button></div>
       <p class="id-disclaimer">TradingView necesita conexión a internet. El diario, las operaciones y las estadísticas funcionan localmente.</p>
     </section>
   </div>

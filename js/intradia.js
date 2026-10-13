@@ -6,6 +6,14 @@
   let loaded = false;
   let trades = [];
   let capital = 10000;
+  const ASSETS = {
+    'GC1!': { market: 'Futuros', tv: 'COMEX:GC1!' },
+    'CL1!': { market: 'Futuros', tv: 'NYMEX:CL1!' },
+    'NQ1!': { market: 'Futuros', tv: 'CME_MINI:NQ1!' },
+    'ES1!': { market: 'Futuros', tv: 'CME_MINI:ES1!' },
+    'MNQ1!': { market: 'Futuros', tv: 'CME_MINI:MNQ1!' },
+    'EURUSD': { market: 'Forex', tv: 'FX:EURUSD' }
+  };
 
   const $ = id => document.getElementById(id);
   const num = value => {
@@ -54,6 +62,7 @@
         load();
         $('id-capital').value = String(capital);
         $('id-date').value = nowLocalInput();
+        window.seleccionarActivoIntradia();
         renderizarIntradia();
       } catch (e) {
         console.error(e);
@@ -62,6 +71,17 @@
     } else {
       renderizarIntradia();
     }
+  };
+  window.seleccionarActivoIntradia = function() {
+    const ticker = $('id-ticker')?.value || 'GC1!';
+    const asset = ASSETS[ticker] || { market: 'Otro', tv: ticker };
+    const marketSelect = $('id-market');
+    if (marketSelect) marketSelect.value = asset.market;
+    const chartLabel = $('id-chart-symbol');
+    if (chartLabel) chartLabel.textContent = asset.tv;
+    const chartButton = document.querySelector('.intradia-chart-card .id-chart-heading button');
+    // Carga el gráfico al cambiar de activo, si el panel ya está montado.
+    if ($('id-tv-wrap')) window.cargarGraficoIntradia();
   };
   window.guardarCapitalIntradia = function() {
     const value = Number($('id-capital')?.value);
@@ -72,6 +92,8 @@
     const form = $('id-trade-form');
     if (!form) return;
     form.reset();
+    $('id-ticker').value = 'GC1!';
+    window.seleccionarActivoIntradia();
     $('id-qty').value = '1';
     $('id-fees').value = '0';
     $('id-date').value = nowLocalInput();
@@ -99,8 +121,7 @@
     };
     trades.unshift(trade);
     persist();
-    const chartInput = $('id-chart-ticker');
-    if (chartInput && !chartInput.value) chartInput.value = ticker;
+    window.seleccionarActivoIntradia();
     renderizarIntradia();
     window.limpiarFormularioIntradia();
   };
@@ -168,9 +189,8 @@
     alert(`${t.ticker} · ${t.side}\nEntrada: ${t.entry}\nCierre: ${t.exit}\nCantidad: ${t.qty}\nResultado: ${money(t.realized)} €\nFecha: ${t.date}\nCierre: ${t.closeDate || '—'}\nMotivo: ${t.closeReason || '—'}\n\nNotas:\n${t.notes || 'Sin notas'}`);
   };
   window.cargarGraficoIntradia = function() {
-    const raw = ($('id-chart-ticker')?.value || $('id-ticker')?.value || '').trim().toUpperCase();
-    if (!raw) return alert('Introduce un ticker. Ejemplos: OANDA:EURUSD, NASDAQ:AAPL, CME_MINI:ES1!');
-    const symbol = raw.includes(':') ? raw : raw;
+    const ticker = ($('id-ticker')?.value || 'GC1!').trim().toUpperCase();
+    const symbol = (ASSETS[ticker] || {tv:ticker}).tv;
     const wrap = $('id-tv-wrap');
     if (!wrap) return;
     $('id-chart-symbol').textContent = symbol;
