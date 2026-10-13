@@ -1,0 +1,66 @@
+<div class="intradia-page">
+  <section class="side-card intradia-header">
+    <div>
+      <h2>⚡ Operativa Intradía</h2>
+      <p>Diario de trading simulado. Los datos se guardan en este navegador, no en Supabase.</p>
+    </div>
+    <div class="intradia-capital">
+      <label for="id-capital">Capital inicial</label>
+      <div><input id="id-capital" type="number" min="0" step="0.01" value="10000"><button class="btn-secondary" onclick="guardarCapitalIntradia()">Guardar</button></div>
+    </div>
+  </section>
+
+  <section class="intradia-metrics">
+    <div class="m-item"><span class="lbl">CAPITAL ACTUAL*</span><span class="val" id="id-equity">10.000,00</span></div>
+    <div class="m-item"><span class="lbl">RESULTADO NETO CERRADO</span><span class="val" id="id-net">0,00</span></div>
+    <div class="m-item"><span class="lbl">OPERACIONES CERRADAS</span><span class="val" id="id-closed">0</span></div>
+    <div class="m-item"><span class="lbl">% ACIERTO</span><span class="val" id="id-winrate">—</span></div>
+    <div class="m-item"><span class="lbl">BENEFICIO/PÉRDIDA ABIERTA</span><span class="val" id="id-openpnl">0,00</span></div>
+    <div class="m-item"><span class="lbl">PROFIT FACTOR</span><span class="val" id="id-pf">—</span></div>
+  </section>
+
+  <div class="intradia-grid">
+    <section class="side-card intradia-form-card">
+      <h3 id="id-form-title">➕ Registrar operación simulada</h3>
+      <form id="id-trade-form" onsubmit="guardarOperacionIntradia(event)">
+        <div class="id-form-grid">
+          <label>Ticker<input id="id-ticker" required maxlength="20" placeholder="Ej. EURUSD o AAPL" style="text-transform:uppercase"></label>
+          <label>Mercado
+            <select id="id-market"><option>Forex</option><option>Futuros</option><option>Acciones</option><option>Índices</option><option>Cripto</option><option>Otro</option></select>
+          </label>
+          <label>Dirección<select id="id-side"><option value="Long">Long (compra)</option><option value="Short">Short (venta)</option></select></label>
+          <label>Fecha y hora<input id="id-date" type="datetime-local" required></label>
+          <label>Precio entrada<input id="id-entry" type="number" min="0.00000001" step="any" required></label>
+          <label>Stop Loss<input id="id-stop" type="number" min="0" step="any"></label>
+          <label>Take Profit<input id="id-target" type="number" min="0" step="any"></label>
+          <label>Cantidad / contratos<input id="id-qty" type="number" min="0.00000001" step="any" value="1" required></label>
+          <label>Comisión estimada (€)<input id="id-fees" type="number" min="0" step="any" value="0"></label>
+          <label>Precio actual (para P/L abierto)<input id="id-current" type="number" min="0" step="any"></label>
+          <label class="id-full">Notas / plan de operación<textarea id="id-notes" rows="3" placeholder="Motivo de entrada, contexto, reglas, emociones..."></textarea></label>
+        </div>
+        <div class="id-form-actions"><button class="btn-primary" type="submit">Guardar operación</button><button class="btn-secondary" type="button" onclick="limpiarFormularioIntradia()">Limpiar</button></div>
+      </form>
+      <p class="id-disclaimer">*Capital actual = capital inicial + resultado cerrado. La operativa es simulada; no envía órdenes al broker.</p>
+    </section>
+
+    <section class="side-card intradia-chart-card">
+      <div class="id-chart-heading"><div><h3>📈 Gráfico TradingView</h3><span id="id-chart-symbol">Selecciona un ticker</span></div><button class="btn-secondary" onclick="cargarGraficoIntradia()">Actualizar gráfico</button></div>
+      <div class="id-tv-wrap" id="id-tv-wrap"><div class="id-tv-placeholder">Introduce un ticker en el formulario y pulsa “Cargar gráfico”.</div></div>
+      <div class="id-chart-tools"><label>Ticker del gráfico<input id="id-chart-ticker" placeholder="Ej. OANDA:EURUSD o NASDAQ:AAPL"></label><button class="btn-primary" onclick="cargarGraficoIntradia()">Cargar gráfico</button></div>
+      <p class="id-disclaimer">TradingView necesita conexión a internet. El diario, las operaciones y las estadísticas funcionan localmente.</p>
+    </section>
+  </div>
+
+  <section class="side-card intradia-book">
+    <div class="id-book-heading"><div><h3>📒 Diario de operaciones</h3><p>Abiertas y cerradas, con resultado simulado y notas.</p></div>
+      <div class="id-book-actions"><button class="btn-secondary" onclick="exportarIntradiaCSV()">⬇ Exportar CSV</button><button class="btn-secondary" onclick="exportarIntradiaJSON()">Copia JSON</button><button class="btn-secondary" onclick="importarIntradiaJSON()">Importar JSON</button></div>
+    </div>
+    <div class="id-filter-row"><label>Mostrar<select id="id-filter" onchange="renderizarIntradia()"><option value="all">Todas</option><option value="open">Abiertas</option><option value="closed">Cerradas</option></select></label><span id="id-count">0 operaciones</span></div>
+    <div class="table-scroll">
+      <table class="mini-table id-trades-table">
+        <thead><tr><th>Fecha</th><th>Ticker</th><th>Mercado</th><th>Tipo</th><th>Entrada</th><th>Stop / Objetivo</th><th>Cantidad</th><th>P/L (€)</th><th>Estado</th><th>Notas</th><th>Acciones</th></tr></thead>
+        <tbody id="id-trades-body"><tr><td colspan="11" class="id-empty">Todavía no hay operaciones. Registra la primera arriba.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>

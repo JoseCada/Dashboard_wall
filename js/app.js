@@ -1315,6 +1315,12 @@ function cambiarPestana(
   ) {
 
     cargarPestanaDivergencias();
+
+  } else if (
+    tabId === 'tab-intradia'
+  ) {
+
+    cargarPestanaIntradia();
   }
 }
 
