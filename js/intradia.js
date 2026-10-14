@@ -188,6 +188,12 @@
     if (!t) return;
     alert(`${t.ticker} · ${t.side}\nEntrada: ${t.entry}\nCierre: ${t.exit}\nCantidad: ${t.qty}\nResultado: ${money(t.realized)} €\nFecha: ${t.date}\nCierre: ${t.closeDate || '—'}\nMotivo: ${t.closeReason || '—'}\n\nNotas:\n${t.notes || 'Sin notas'}`);
   };
+  window.abrirTradingViewIntradia = function() {
+    const ticker = ($('id-ticker')?.value || 'GC1!').trim().toUpperCase();
+    const symbol = (ASSETS[ticker] || {tv:ticker}).tv;
+    const url = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
   window.cargarGraficoIntradia = function() {
     const ticker = ($('id-ticker')?.value || 'GC1!').trim().toUpperCase();
     const symbol = (ASSETS[ticker] || {tv:ticker}).tv;
@@ -200,6 +206,11 @@
     frame.referrerPolicy = 'no-referrer-when-downgrade';
     frame.src = `https://s.tradingview.com/widgetembed/?frameElementId=tv_intradia_${Date.now()}&symbol=${encodeURIComponent(symbol)}&interval=5&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=%231e222d&studies=%5B%5D&theme=dark&style=1&timezone=Europe%2FMadrid&withdateranges=1&hideideas=1&locale=es`;
     wrap.replaceChildren(frame);
+    const fallback = document.createElement('div');
+    fallback.className = 'id-tv-fallback';
+    fallback.innerHTML = '¿El gráfico indica que el símbolo solo está disponible en TradingView? <button type="button" class="btn-primary">Abrir gráfico completo ↗</button>';
+    fallback.querySelector('button').addEventListener('click', window.abrirTradingViewIntradia);
+    wrap.appendChild(fallback);
   };
   function download(name, content, type) {
     const blob = new Blob([content], {type});

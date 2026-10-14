@@ -407,3 +407,9 @@ body {
  .id-tv-wrap { height:330px; }
  .intradia-header { align-items:stretch; }
 }
+
+/* Intradía: acceso directo a TradingView cuando un símbolo no admite inserción */
+.intradia-chart-card .id-chart-actions { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
+.id-tv-fallback { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:10px 12px; border-top:1px solid var(--border-color, #343a46); color:var(--text-muted, #aab1bd); font-size:12px; }
+.id-tv-fallback .btn-primary { white-space:nowrap; }
+@media (max-width:700px) { .intradia-chart-card .id-chart-actions { justify-content:flex-start; } }
