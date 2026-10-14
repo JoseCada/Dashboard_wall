@@ -42,8 +42,11 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
       localStorage.setItem(CAPITAL_KEY, String(capital));
+      return true;
     } catch (e) {
-      alert('No se pudieron guardar los datos en este navegador. Exporta una copia de seguridad y comprueba el almacenamiento disponible.');
+      console.error('Error guardando el diario de intradía:', e);
+      alert('No se pudieron guardar los datos en este navegador. Comprueba que el sitio permita almacenamiento local y que no estés en navegación privada.');
+      return false;
     }
   }
   function pnl(trade, price, includeFees = true) {
@@ -64,6 +67,9 @@
         $('id-date').value = nowLocalInput();
         window.seleccionarActivoIntradia();
         renderizarIntradia();
+        ['id-entry','id-stop','id-target','id-side'].forEach(id => $(id)?.addEventListener('input', window.calcularRiesgoBeneficioIntradia));
+        $('id-side')?.addEventListener('change', window.calcularRiesgoBeneficioIntradia);
+        window.calcularRiesgoBeneficioIntradia();
       } catch (e) {
         console.error(e);
         container.innerHTML = '<section class="side-card" style="padding:20px;color:var(--neg-red)">No se pudo cargar tabs/tab5.html. Comprueba que el archivo esté en la carpeta tabs.</section>';
@@ -83,6 +89,32 @@
     // Carga el gráfico al cambiar de activo, si el panel ya está montado.
     if ($('id-tv-wrap')) window.cargarGraficoIntradia();
   };
+  function ratioRiesgoBeneficio(side, entry, stop, target) {
+    if (!(entry > 0) || !(stop > 0) || !(target > 0)) return null;
+    const risk = side === 'Short' ? stop - entry : entry - stop;
+    const reward = side === 'Short' ? entry - target : target - entry;
+    if (!(risk > 0) || !(reward > 0)) return null;
+    return { risk, reward, ratio: reward / risk };
+  }
+  window.calcularRiesgoBeneficioIntradia = function() {
+    const box = $('id-rb-value');
+    const detail = $('id-rb-detail');
+    if (!box || !detail) return;
+    const entry = Number($('id-entry')?.value);
+    const stop = Number($('id-stop')?.value);
+    const target = Number($('id-target')?.value);
+    const side = $('id-side')?.value || 'Long';
+    const rb = ratioRiesgoBeneficio(side, entry, stop, target);
+    box.className = '';
+    if (!rb) {
+      box.textContent = 'No disponible';
+      detail.textContent = 'Introduce entrada, stop y objetivo válidos para la dirección elegida.';
+      return;
+    }
+    box.textContent = `1 : ${rb.ratio.toFixed(2).replace('.', ',')}`;
+    box.className = rb.ratio >= 2 ? 'id-rb-good' : 'id-rb-bad';
+    detail.textContent = `Riesgo: ${money(rb.risk)} · Beneficio potencial: ${money(rb.reward)} por unidad de precio.`;
+  };
   window.guardarCapitalIntradia = function() {
     const value = Number($('id-capital')?.value);
     if (!Number.isFinite(value) || value < 0) return alert('Introduce un capital inicial válido (0 o superior).');
@@ -94,6 +126,7 @@
     form.reset();
     $('id-ticker').value = 'GC1!';
     window.seleccionarActivoIntradia();
+    window.calcularRiesgoBeneficioIntradia();
     $('id-qty').value = '1';
     $('id-fees').value = '0';
     $('id-date').value = nowLocalInput();
@@ -113,26 +146,30 @@
     const target = num($('id-target')?.value);
     const currentRaw = $('id-current')?.value;
     const trade = {
-      id: (crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
+      id: (window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
       ticker, market: $('id-market').value, side: $('id-side').value, date,
       entry, stop: stop > 0 ? stop : null, target: target > 0 ? target : null,
       qty, fees, current: currentRaw !== '' && currentRaw != null && num(currentRaw) > 0 ? num(currentRaw) : entry,
       notes: ($('id-notes')?.value || '').trim(), status:'open', exit:null, closeDate:null, closeReason:''
     };
     trades.unshift(trade);
-    persist();
-    window.seleccionarActivoIntradia();
+    if (!persist()) { trades.shift(); return; }
+    // Confirma visualmente que el registro se guardó y actualiza la tabla.
     renderizarIntradia();
+    window.seleccionarActivoIntradia();
     window.limpiarFormularioIntradia();
+    const notice = $('id-save-notice');
+    if (notice) { notice.textContent = `Operación ${ticker} guardada correctamente.`; notice.hidden = false; }
+    else alert(`Operación ${ticker} guardada correctamente.`);
   };
   window.renderizarIntradia = function() {
     if (!$('id-trades-body')) return;
-    const closed = trades.filter(t => t.status === 'closed');
+    const closed = trades.filter(t => t.status !== 'open');
     const opened = trades.filter(t => t.status === 'open');
     const realized = closed.reduce((sum,t) => sum + num(t.realized), 0);
     const unrealized = opened.reduce((sum,t) => sum + pnl(t, t.current), 0);
-    const winners = closed.filter(t => num(t.realized) > 0);
-    const losers = closed.filter(t => num(t.realized) < 0);
+    const winners = closed.filter(t => num(t.realized) > 0 || t.status === 'closed_win');
+    const losers = closed.filter(t => num(t.realized) < 0 || t.status === 'closed_loss');
     const grossWin = winners.reduce((sum,t) => sum + num(t.realized), 0);
     const grossLoss = Math.abs(losers.reduce((sum,t) => sum + num(t.realized), 0));
     $('id-equity').textContent = `${money(capital + realized)} €`;
@@ -144,22 +181,25 @@
     $('id-openpnl').className = `val ${unrealized >= 0 ? 'text-pos' : 'text-neg'}`;
     $('id-pf').textContent = grossLoss ? (grossWin / grossLoss).toFixed(2) : (grossWin ? '∞' : '—');
     const filter = $('id-filter')?.value || 'all';
-    const list = trades.filter(t => filter === 'all' || (filter === 'open' ? t.status === 'open' : t.status === 'closed'));
+    const list = trades.filter(t => filter === 'all' || (filter === 'open' ? t.status === 'open' : t.status !== 'open'));
     $('id-count').textContent = `${list.length} operación${list.length === 1 ? '' : 'es'}`;
     if (!list.length) {
-      $('id-trades-body').innerHTML = '<tr><td colspan="10" class="id-empty">No hay operaciones en esta vista.</td></tr>';
+      $('id-trades-body').innerHTML = '<tr><td colspan="11" class="id-empty">No hay operaciones en esta vista.</td></tr>';
       return;
     }
     $('id-trades-body').innerHTML = list.map(t => {
       const result = t.status === 'closed' ? num(t.realized) : pnl(t,t.current);
       const resultClass = result >= 0 ? 'text-pos' : 'text-neg';
       const stopTarget = `${t.stop == null ? '—' : esc(t.stop)} / ${t.target == null ? '—' : esc(t.target)}`;
+      const rb = ratioRiesgoBeneficio(t.side, num(t.entry), num(t.stop), num(t.target));
+      const rbText = rb ? `1:${rb.ratio.toFixed(2)}` : '—';
       const date = esc(String(t.date || '').replace('T',' '));
       const note = t.notes ? esc(t.notes) : '—';
       const actions = t.status === 'open'
-        ? `<button class="btn-secondary id-small-btn" onclick="actualizarPrecioIntradia('${esc(t.id)}')">Precio</button> <button class="btn-primary id-small-btn" onclick="cerrarOperacionIntradia('${esc(t.id)}')">Cerrar</button>`
-        : `<button class="btn-secondary id-small-btn" onclick="verDetalleIntradia('${esc(t.id)}')">Ver</button>`;
-      return `<tr><td>${date}</td><td><strong>${esc(t.ticker)}</strong></td><td>${esc(t.market)}</td><td>${t.side === 'Long' ? '📈 Long' : '📉 Short'}</td><td>${money(t.entry)}</td><td>${stopTarget}</td><td>${money(t.qty)}</td><td class="${resultClass}">${result > 0 ? '+' : ''}${money(result)} €</td><td><span class="id-status ${t.status}">${t.status === 'open' ? 'Abierta' : 'Cerrada'}</span></td><td class="id-note-cell" title="${note}">${note}</td><td class="id-action-cell">${actions}</td></tr>`;
+        ? `<button class="btn-secondary id-small-btn" onclick="actualizarPrecioIntradia('${esc(t.id)}')">Precio</button> <button class="btn-primary id-small-btn" onclick="cerrarOperacionIntradia('${esc(t.id)}')">Cerrar</button> <button class="btn-secondary id-small-btn" onclick="cambiarEstadoOperacionIntradia('${esc(t.id)}')">Estado</button>`
+        : `<button class="btn-secondary id-small-btn" onclick="verDetalleIntradia('${esc(t.id)}')">Ver</button> <button class="btn-secondary id-small-btn" onclick="cambiarEstadoOperacionIntradia('${esc(t.id)}')">Estado</button>`;
+      const statusLabel = t.status === 'open' ? 'Abierta' : t.status === 'closed_win' ? 'Cerrada con ganancias' : t.status === 'closed_loss' ? 'Cerrada con pérdidas' : (num(t.realized) >= 0 ? 'Cerrada con ganancias' : 'Cerrada con pérdidas');
+      return `<tr><td>${date}</td><td><strong>${esc(t.ticker)}</strong></td><td>${esc(t.market)}</td><td>${t.side === 'Long' ? '📈 Long' : '📉 Short'}</td><td>${money(t.entry)}</td><td>${stopTarget}</td><td>${rbText}</td><td>${money(t.qty)}</td><td class="${resultClass}">${result > 0 ? '+' : ''}${money(result)} €</td><td><span class="id-status ${t.status}">${statusLabel}</span></td><td class="id-note-cell" title="${note}">${note}</td><td class="id-action-cell">${actions}</td></tr>`;
     }).join('');
   };
   window.actualizarPrecioIntradia = function(id) {
@@ -179,8 +219,30 @@
     const exit = Number(raw);
     if (!Number.isFinite(exit) || exit <= 0) return alert('Introduce un precio válido mayor que cero.');
     const reason = prompt('Motivo de cierre (opcional):', 'Cierre manual') ?? 'Cierre manual';
-    t.exit = exit; t.closeDate = nowLocalInput(); t.closeReason = reason; t.status = 'closed';
-    t.realized = pnl(t, exit);
+    t.exit = exit; t.closeDate = nowLocalInput(); t.closeReason = reason;
+    t.realized = pnl(t, exit); t.status = t.realized >= 0 ? 'closed_win' : 'closed_loss';
+    persist(); renderizarIntradia();
+  };
+  window.cambiarEstadoOperacionIntradia = function(id) {
+    const t = trades.find(x => x.id === id);
+    if (!t) return;
+    const choice = prompt('Estado de la operación:\n1 = Abierta\n2 = Cerrada con ganancias\n3 = Cerrada con pérdidas', t.status === 'open' ? '1' : (num(t.realized) >= 0 ? '2' : '3'));
+    if (choice === null) return;
+    if (!['1','2','3'].includes(choice.trim())) return alert('Elige 1, 2 o 3.');
+    if (choice.trim() === '1') {
+      t.status = 'open'; t.exit = null; t.realized = null; t.closeDate = null; t.closeReason = '';
+    } else {
+      const raw = prompt('Introduce el precio de cierre para calcular el resultado:', String(t.exit ?? t.current ?? t.entry));
+      if (raw === null) return;
+      const exit = Number(raw);
+      if (!Number.isFinite(exit) || exit <= 0) return alert('Introduce un precio de cierre válido.');
+      const realized = pnl(t, exit);
+      if (choice.trim() === '2' && realized <= 0) return alert('Con ese precio la operación no tiene ganancias. Revisa el precio o selecciona pérdidas.');
+      if (choice.trim() === '3' && realized >= 0) return alert('Con ese precio la operación no tiene pérdidas. Revisa el precio o selecciona ganancias.');
+      t.exit = exit; t.current = exit; t.realized = realized; t.closeDate = nowLocalInput();
+      t.status = choice.trim() === '2' ? 'closed_win' : 'closed_loss';
+      t.closeReason = choice.trim() === '2' ? 'Cerrada con ganancias' : 'Cerrada con pérdidas';
+    }
     persist(); renderizarIntradia();
   };
   window.verDetalleIntradia = function(id) {

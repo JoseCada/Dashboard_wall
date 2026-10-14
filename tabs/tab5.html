@@ -41,14 +41,16 @@
         </label>
         <label>Fecha y hora<input id="id-date" type="datetime-local" required></label>
         <label>Precio de entrada<input id="id-entry" type="number" min="0.00000001" step="any" required></label>
-        <label>Stop loss<input id="id-stop" type="number" min="0" step="any" placeholder="Opcional"></label>
-        <label>Take profit<input id="id-target" type="number" min="0" step="any" placeholder="Opcional"></label>
+        <label>Stop loss<input id="id-stop" type="number" min="0" step="any" placeholder="Opcional" oninput="calcularRiesgoBeneficioIntradia()"></label>
+        <label>Take profit<input id="id-target" type="number" min="0" step="any" placeholder="Opcional" oninput="calcularRiesgoBeneficioIntradia()"></label>
+        <div class="id-rb-box" aria-live="polite"><span>Relación riesgo/beneficio (R/B)</span><strong id="id-rb-value">Introduce entrada, stop y objetivo</strong><small id="id-rb-detail">Se calcula automáticamente antes de guardar.</small></div>
         <label>Cantidad / contratos<input id="id-qty" type="number" min="0.00000001" step="any" value="1" required></label>
         <label>Comisión (€)<input id="id-fees" type="number" min="0" step="any" value="0"></label>
         <label>Precio actual<input id="id-current" type="number" min="0" step="any" placeholder="Para calcular P/L abierto"></label>
         <label class="id-full">Notas del plan<textarea id="id-notes" rows="2" placeholder="Motivo de entrada, contexto y observaciones..."></textarea></label>
       </div>
       <div class="id-form-actions"><button class="btn-primary" type="submit">Guardar operación</button><button class="btn-secondary" type="button" onclick="limpiarFormularioIntradia()">Limpiar formulario</button></div>
+      <p id="id-save-notice" class="id-save-notice" role="status" aria-live="polite" hidden></p>
     </form>
     <p class="id-disclaimer">*Capital actual = capital inicial + resultado de operaciones cerradas. Registro simulado: no envía órdenes al broker. Los cálculos no aplican automáticamente el valor por punto específico de cada futuro.</p>
   </section>
@@ -60,8 +62,8 @@
     </div>
     <div class="id-filter-row"><label>Mostrar<select id="id-filter" onchange="renderizarIntradia()"><option value="all">Todas</option><option value="open">Abiertas</option><option value="closed">Cerradas</option></select></label><span id="id-count">0 operaciones</span></div>
     <div class="table-scroll"><table class="mini-table id-trades-table">
-      <thead><tr><th>Fecha</th><th>Activo</th><th>Dirección</th><th>Entrada</th><th>Stop / objetivo</th><th>Cantidad</th><th>P/L (€)</th><th>Estado</th><th>Notas</th><th>Acciones</th></tr></thead>
-      <tbody id="id-trades-body"><tr><td colspan="10" class="id-empty">Todavía no hay operaciones. Registra la primera arriba.</td></tr></tbody>
+      <thead><tr><th>Fecha</th><th>Activo</th><th>Dirección</th><th>Entrada</th><th>Stop / objetivo</th><th>R/B</th><th>Cantidad</th><th>P/L (€)</th><th>Estado</th><th>Notas</th><th>Acciones</th></tr></thead>
+      <tbody id="id-trades-body"><tr><td colspan="11" class="id-empty">Todavía no hay operaciones. Registra la primera arriba.</td></tr></tbody>
     </table></div>
   </section>
 </div>
@@ -73,6 +75,13 @@
 .id-simple-heading p { margin:0; color:#8b91a1; font-size:12px; }
 .id-simple-form-card .id-form-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
 .id-simple-form-card .id-full { grid-column:1/-1; }
+.id-rb-box { display:flex; flex-direction:column; justify-content:center; gap:4px; padding:10px 12px; border:1px solid var(--border-color, #303746); border-radius:8px; background:rgba(255,255,255,.025); min-width:0; }
+.id-rb-box span { color:#a7adbb; font-size:11px; }
+.id-rb-box strong { color:#fff; font-size:18px; }
+.id-rb-box small { color:#858b9b; font-size:10px; }
+.id-rb-box .id-rb-good { color:#39c98a; }
+.id-rb-box .id-rb-bad { color:#ff7373; }
+.id-save-notice { margin:10px 0 0; padding:9px 12px; border-radius:7px; color:#39c98a; background:rgba(57,201,138,.09); font-size:12px; }
 .id-simple-form-card .id-disclaimer { margin:12px 0 0; color:#858b9b; font-size:11px; }
 @media(max-width:900px) { .id-simple-form-card .id-form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:560px) { .id-simple-form-card .id-form-grid { grid-template-columns:minmax(0,1fr); } .id-simple-form-card .id-full { grid-column:1; } }
