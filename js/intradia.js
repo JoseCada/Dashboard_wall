@@ -147,7 +147,7 @@
     const list = trades.filter(t => filter === 'all' || (filter === 'open' ? t.status === 'open' : t.status === 'closed'));
     $('id-count').textContent = `${list.length} operación${list.length === 1 ? '' : 'es'}`;
     if (!list.length) {
-      $('id-trades-body').innerHTML = '<tr><td colspan="11" class="id-empty">No hay operaciones en esta vista.</td></tr>';
+      $('id-trades-body').innerHTML = '<tr><td colspan="10" class="id-empty">No hay operaciones en esta vista.</td></tr>';
       return;
     }
     $('id-trades-body').innerHTML = list.map(t => {
@@ -199,18 +199,17 @@
     const symbol = (ASSETS[ticker] || {tv:ticker}).tv;
     const wrap = $('id-tv-wrap');
     if (!wrap) return;
-    $('id-chart-symbol').textContent = symbol;
-    const frame = document.createElement('iframe');
-    frame.title = `Gráfico TradingView de ${symbol}`;
-    frame.loading = 'lazy';
-    frame.referrerPolicy = 'no-referrer-when-downgrade';
-    frame.src = `https://s.tradingview.com/widgetembed/?frameElementId=tv_intradia_${Date.now()}&symbol=${encodeURIComponent(symbol)}&interval=5&hidesidetoolbar=0&symboledit=1&saveimage=0&toolbarbg=%231e222d&studies=%5B%5D&theme=dark&style=1&timezone=Europe%2FMadrid&withdateranges=1&hideideas=1&locale=es`;
-    wrap.replaceChildren(frame);
-    const fallback = document.createElement('div');
-    fallback.className = 'id-tv-fallback';
-    fallback.innerHTML = '¿El gráfico indica que el símbolo solo está disponible en TradingView? <button type="button" class="btn-primary">Abrir gráfico completo ↗</button>';
-    fallback.querySelector('button').addEventListener('click', window.abrirTradingViewIntradia);
-    wrap.appendChild(fallback);
+    const label = $('id-chart-symbol');
+    if (label) label.textContent = `${ticker} · ${symbol}`;
+
+    // No intentamos incrustar los futuros continuos: TradingView restringe
+    // algunos símbolos en widgets embebidos. El diario permanece en esta pestaña
+    // y el análisis se abre en la web completa de TradingView.
+    const message = document.createElement('div');
+    message.className = 'id-tv-placeholder';
+    message.innerHTML = `<strong>${esc(ticker)}</strong><p>El diario de operaciones permanece aquí. Abre el gráfico completo de este activo en una pestaña nueva de TradingView para analizar el precio.</p><button type="button" class="btn-primary">Abrir gráfico en TradingView ↗</button>`;
+    message.querySelector('button').addEventListener('click', window.abrirTradingViewIntradia);
+    wrap.replaceChildren(message);
   };
   function download(name, content, type) {
     const blob = new Blob([content], {type});
