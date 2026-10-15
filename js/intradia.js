@@ -134,6 +134,9 @@
   };
   window.guardarOperacionIntradia = function(event) {
     event?.preventDefault();
+    const notice = $('id-save-notice');
+    if (notice) { notice.hidden = true; notice.textContent = ''; }
+    try {
     const ticker = ($('id-ticker')?.value || '').trim().toUpperCase();
     const entry = Number($('id-entry')?.value);
     const qty = Number($('id-qty')?.value);
@@ -145,9 +148,10 @@
     const stop = num($('id-stop')?.value);
     const target = num($('id-target')?.value);
     const currentRaw = $('id-current')?.value;
+    const asset = ASSETS[ticker] || { market: 'Otro', tv: ticker };
     const trade = {
       id: (window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`),
-      ticker, market: $('id-market').value, side: $('id-side').value, date,
+      ticker, market: asset.market, side: $('id-side')?.value || 'Long', date,
       entry, stop: stop > 0 ? stop : null, target: target > 0 ? target : null,
       qty, fees, current: currentRaw !== '' && currentRaw != null && num(currentRaw) > 0 ? num(currentRaw) : entry,
       notes: ($('id-notes')?.value || '').trim(), status:'open', exit:null, closeDate:null, closeReason:''
@@ -158,9 +162,18 @@
     renderizarIntradia();
     window.seleccionarActivoIntradia();
     window.limpiarFormularioIntradia();
-    const notice = $('id-save-notice');
-    if (notice) { notice.textContent = `Operación ${ticker} guardada correctamente.`; notice.hidden = false; }
+    if (notice) { notice.textContent = `Operación ${ticker} guardada correctamente.`; notice.hidden = false; notice.style.color = '#39c98a'; }
     else alert(`Operación ${ticker} guardada correctamente.`);
+    } catch (error) {
+      console.error('No se pudo guardar la operación intradía:', error);
+      if (notice) {
+        notice.textContent = `No se pudo guardar la operación: ${error?.message || error}`;
+        notice.hidden = false;
+        notice.style.color = '#ff7373';
+      } else {
+        alert(`No se pudo guardar la operación: ${error?.message || error}`);
+      }
+    }
   };
   window.renderizarIntradia = function() {
     if (!$('id-trades-body')) return;
