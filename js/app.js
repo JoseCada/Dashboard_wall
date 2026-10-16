@@ -1316,12 +1316,19 @@ function cambiarPestana(
 
     cargarPestanaDivergencias();
 
-  } else if (
+  }  else if (
     tabId === 'tab-intradia'
   ) {
 
     cargarPestanaIntradia();
-  }
+
+  } else if (
+    tabId === 'tab-patrimonio'
+  ) {
+
+    cargarPestanaPatrimonio();
+    }
+    
 }
 
 
