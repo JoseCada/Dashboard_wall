@@ -36,7 +36,7 @@ const DB = {
         try {
             const { error } = await supabaseClient
                 .from('broker_tickers')
-                .insert([{ ticker: ticker.toUpperCase() }]);
+                .insert([{ ticker: ticker.toUpperCase(), created_at: new Date().toISOString() }]);
 
             if (error && error.code !== '23505') throw error; // 23505 = ya existía, se ignora
             return true;
@@ -151,7 +151,7 @@ const DB = {
         try {
             const { data, error } = await supabaseClient
                 .from('watchlist')
-                .insert([{ ticker: ticker.toUpperCase() }]);
+                .insert([{ ticker: ticker.toUpperCase(), created_at: new Date().toISOString() }]);
 
             // Código 23505 = Clave duplicada (si ya estaba agregado, se ignora el error)
             if (error && error.code !== '23505') throw error;
