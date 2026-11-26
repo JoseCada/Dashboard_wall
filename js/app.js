@@ -1316,12 +1316,19 @@ function cambiarPestana(
 
     cargarPestanaDivergencias();
 
-  } else if (
+  }  else if (
     tabId === 'tab-intradia'
   ) {
 
     cargarPestanaIntradia();
-  }
+
+  } else if (
+    tabId === 'tab-patrimonio'
+  ) {
+
+    cargarPestanaPatrimonio();
+    }
+    
 }
 
 
@@ -2706,7 +2713,7 @@ async function cargarListaSeguimiento() {
 
   tbody.innerHTML =
     '<tr>' +
-    '<td colspan="6" style="text-align:center; color:#787b86;">' +
+    '<td colspan="5" style="text-align:center; color:#787b86;">' +
     'Cargando...' +
     '</td>' +
     '</tr>';
@@ -2718,7 +2725,7 @@ async function cargarListaSeguimiento() {
 
     tbody.innerHTML =
       '<tr>' +
-      '<td colspan="6" style="text-align:center; color:#787b86;">' +
+      '<td colspan="5" style="text-align:center; color:#787b86;">' +
       'Aún no sigues ningún activo. Añádelo desde el Scanner o escribe un ticker arriba.' +
       '</td>' +
       '</tr>';
@@ -2750,14 +2757,6 @@ async function cargarListaSeguimiento() {
 
       const entrada =
         item.precio_entrada;
-
-      // Fecha y hora en que el activo se añadió a la lista de seguimiento.
-      const fechaAnadido = item.created_at
-        ? new Date(item.created_at).toLocaleString('es-ES', {
-            day: '2-digit', month: '2-digit', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-          })
-        : 'Fecha no disponible';
 
       const tr =
         document.createElement('tr');
@@ -2801,10 +2800,6 @@ async function cargarListaSeguimiento() {
 
         <td>
           <b>${item.ticker}</b>
-        </td>
-
-        <td style="white-space:nowrap; font-size:11px; color:#aab2c0;">
-          ${fechaAnadido}
         </td>
 
         <td>
